@@ -23,9 +23,9 @@ namespace Engine
             {"max_torque", {this->max_torque}} };
 
         // TODO: is this a good idea?
-        this->n_iterations     = std::max(long(1), this->parameters->n_iterations);
+        this->n_iterations     = std::max(static_cast<std::uint64_t>(1), this->parameters->n_iterations);
         this->n_iterations_log = std::min(this->parameters->n_iterations_log, this->n_iterations);
-        if( this->n_iterations_log <= long(0) )
+        if( this->n_iterations_log <= 0 )
             this->n_iterations_log = this->n_iterations;
         this->n_log            = this->n_iterations / this->n_iterations_log;
 

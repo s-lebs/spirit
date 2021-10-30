@@ -15,12 +15,12 @@ struct Parameters_Method
 {
     // --------------- Iterations ------------
     // Number of iterations carried out when pressing "play" or calling "iterate"
-    long int n_iterations = 1e6;
+    std::uint64_t n_iterations = 1e6;
     // Number of iterations after which the Method should save data
-    long int n_iterations_log = 1e3;
+    std::uint64_t n_iterations_log = 1e3;
 
     // Maximum walltime for Iterate in seconds
-    long int max_walltime_sec = 0;
+    std::uint64_t max_walltime_sec = 0;
 
     // Force convergence criterium
     double force_convergence = 1e-10;

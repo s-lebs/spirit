@@ -127,9 +127,9 @@ namespace Engine
         std::chrono::time_point<std::chrono::system_clock> t_start, t_last;
 
         // Number of iterations that have been executed
-        long iteration;
+        std::uint64_t iteration;
         // Number of steps (set of iterations between logs) that have been executed
-        long step;
+        std::uint64_t step;
 
         // Timings and Iterations per Second
         scalar ips;
@@ -139,11 +139,11 @@ namespace Engine
 
         //////////// Parameters //////////////////////////////////////////////////////
         // Number of iterations
-        long n_iterations;
+        std::uint64_t n_iterations;
         // Number of iterations until log
-        long n_iterations_log;
+        std::uint64_t n_iterations_log;
         // Number of times to save
-        long n_log;
+        std::uint64_t n_log;
 
     protected:
 
