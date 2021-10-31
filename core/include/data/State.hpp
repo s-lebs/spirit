@@ -2,12 +2,13 @@
 #include <utility/Exception.hpp>
 #include <utility/Timing.hpp>
 
+#include <cstddef>
+#include <cstdint>
+
 /*
  * State
- *     The State struct is passed around in an application to make the
- *     simulation's state available.
- *     The State contains all necessary Spin Systems (via chain)
- *     and provides a few utilities (pointers) to commonly used contents.
+ *   The State struct is passed around in an application to make the simulation's state available. The State contains
+ *   all necessary Spin Systems (via chain) and provides a few utilities (pointers) to commonly used contents.
  */
 struct State
 {
@@ -21,9 +22,12 @@ struct State
     // Spin configuration in clipboard
     std::shared_ptr<vectorfield> clipboard_spins;
 
-    // Info
-    int nos /*Number of Spins*/, noi /*Number of Images*/;
-    int idx_active_image;
+    // Number of spins
+    std::size_t nos;
+    // Number of images
+    std::size_t noi;
+    // Index of the currently active image
+    std::size_t idx_active_image;
 
     // The Methods
     //    max. noi*noc methods on images [noc][noi]
@@ -42,8 +46,6 @@ struct State
     bool quiet;
 };
 
-// TODO: move this away somewhere?
-
 // Check if the state pointer seems to point to a correctly initialized state
 inline void check_state( const State * state )
 {
@@ -59,9 +61,9 @@ inline void check_state( const State * state )
 
 /* Behaviour for illegal (non-existing) idx_image and idx_chain:
  * - In case of negative values the indices must be promoted to the ones of the idx_active_image
- *  and idx_active_chain.
+ *   and idx_active_chain.
  * - In case of negative (non-existing) indices the function should throw an exception before doing
- * any change to the corresponding variable (eg. )
+ *   any change to the corresponding variable (eg. )
  */
 inline void from_indices(
     const State * state, int & idx_image, int & idx_chain, std::shared_ptr<Data::Spin_System> & image,
@@ -73,8 +75,8 @@ inline void from_indices(
     idx_chain = 0;
     chain     = state->chain;
 
-    // In case of positive non-existing chain_idx throw exception
-    if( idx_image >= state->chain->noi )
+    // In case of positive non-existing idx_image throw exception
+    if( idx_image >= static_cast<std::int64_t>( state->chain->noi ) )
         spirit_throw(
             Utility::Exception_Classifier::Non_existing_Image, Utility::Log_Level::Warning,
             fmt::format(
@@ -84,7 +86,7 @@ inline void from_indices(
     if( idx_image < 0 )
     {
         image     = state->active_image;
-        idx_image = state->idx_active_image;
+        idx_image = static_cast<int>( state->idx_active_image );
     }
     else
         image = chain->images[idx_image];

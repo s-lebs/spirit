@@ -66,11 +66,11 @@ namespace Engine
 
         // Calculate the total energy for a single spin to be used in Monte Carlo.
         //      Note: therefore the energy of pairs is weighted x2 and of quadruplets x4.
-        scalar Energy_Single_Spin(int ispin, const vectorfield & spins) override;
+        scalar Energy_Single_Spin(std::size_t ispin, const vectorfield & spins) override;
 
         // Hamiltonian name as string
         const std::string& Name() override;
-        
+
         // ------------ Single Spin Interactions ------------
         // External magnetic field across the sample
         scalar external_field_magnitude;
@@ -154,7 +154,7 @@ namespace Engine
         // Calculate the Quadruplet energy
         void E_Quadruplet(const vectorfield & spins, scalarfield & Energy);
 
-        private:
+    private:
         int idx_zeeman, idx_anisotropy, idx_exchange, idx_dmi, idx_ddi, idx_quadruplet;
         void Gradient_DDI_Cutoff(const vectorfield& spins, vectorfield & gradient);
         void Gradient_DDI_Direct(const vectorfield& spins, vectorfield & gradient);

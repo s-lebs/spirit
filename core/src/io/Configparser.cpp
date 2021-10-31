@@ -158,17 +158,17 @@ try
 
     // Geometry
     auto geometry = Geometry_from_Config( config_file );
-    // LLG Parameters
+    // LLG parameters
     auto llg_params = Parameters_Method_LLG_from_Config( config_file );
-    // MC Parameters
+    // MC parameters
     auto mc_params = Parameters_Method_MC_from_Config( config_file );
-    // EMA Parameters
+    // EMA parameters
     auto ema_params = Parameters_Method_EMA_from_Config( config_file );
-    // MMF Parameters
+    // MMF parameters
     auto mmf_params = Parameters_Method_MMF_from_Config( config_file );
     // Hamiltonian
     auto hamiltonian = Hamiltonian_from_Config( config_file, geometry );
-    // Spin System
+    // Spin system
     auto system = std::make_unique<Data::Spin_System>(
         std::move( hamiltonian ), std::move( geometry ), std::move( llg_params ), std::move( mc_params ),
         std::move( ema_params ), std::move( mmf_params ), false );
@@ -185,7 +185,7 @@ catch( ... )
 } // End Spin_System_from_Config
 
 void Bravais_Vectors_from_Config(
-    const std::string & config_file, std::vector<Vector3> & bravais_vectors,
+    const std::string & config_file, std::array<Vector3, 3> & bravais_vectors,
     Data::BravaisLatticeType & bravais_lattice_type, std::string & bravais_lattice_type_str )
 try
 {
@@ -281,10 +281,10 @@ try
     // Bravais vectors {a, b, c}
     Data::BravaisLatticeType bravais_lattice_type = Data::BravaisLatticeType::SC;
     std::string bravais_lattice_type_str;
-    std::vector<Vector3> bravais_vectors = { Vector3{ 1, 0, 0 }, Vector3{ 0, 1, 0 }, Vector3{ 0, 0, 1 } };
+    std::array<Vector3, 3> bravais_vectors = { { Vector3{ 1, 0, 0 }, Vector3{ 0, 1, 0 }, Vector3{ 0, 0, 1 } } };
     // Atoms in the basis
     std::vector<Vector3> cell_atoms = { Vector3{ 0, 0, 0 } };
-    int n_cell_atoms                = cell_atoms.size();
+    std::size_t n_cell_atoms        = cell_atoms.size();
     // Basis cell composition information (atom types, magnetic moments, ...)
     Data::Basis_Cell_Composition cell_composition{ false, { 0 }, { 0 }, { 1 }, {} };
     // Lattice Constant [Angstrom]
@@ -301,7 +301,7 @@ try
 
     //------------------------------- Parser --------------------------------
     Log( Log_Level::Debug, Log_Sender::IO, "Geometry: building" );
-    if( config_file != "" )
+    if( !config_file.empty() )
     {
         try
         {
@@ -321,11 +321,11 @@ try
                 myfile.iss >> n_cell_atoms;
                 cell_atoms = std::vector<Vector3>( n_cell_atoms );
                 cell_composition.iatom.resize( n_cell_atoms );
-                cell_composition.atom_type = std::vector<int>( n_cell_atoms, 0 );
+                cell_composition.atom_type = std::vector<std::int64_t>( n_cell_atoms, 0 );
                 cell_composition.mu_s      = std::vector<scalar>( n_cell_atoms, 1 );
 
                 // Read atom positions
-                for( int iatom = 0; iatom < n_cell_atoms; ++iatom )
+                for( std::size_t iatom = 0; iatom < n_cell_atoms; ++iatom )
                 {
                     myfile.GetLine();
                     myfile.iss >> cell_atoms[iatom][0] >> cell_atoms[iatom][1] >> cell_atoms[iatom][2];
@@ -462,12 +462,12 @@ try
     parameter_log.push_back( fmt::format( "        c = {}", bravais_vectors[2].transpose() ) );
     parameter_log.push_back( fmt::format( "    basis cell: {} atom(s)", n_cell_atoms ) );
     parameter_log.push_back( "    relative positions (first 10):" );
-    for( int iatom = 0; iatom < n_cell_atoms && iatom < 10; ++iatom )
+    for( std::size_t iatom = 0; iatom < n_cell_atoms && iatom < 10; ++iatom )
         parameter_log.push_back( fmt::format(
             "        atom {} at ({}), mu_s={}", iatom, cell_atoms[iatom].transpose(), cell_composition.mu_s[iatom] ) );
 
     parameter_log.push_back( "    absolute atom positions (first 10):" );
-    for( int iatom = 0; iatom < n_cell_atoms && iatom < 10; ++iatom )
+    for( std::size_t iatom = 0; iatom < n_cell_atoms && iatom < 10; ++iatom )
     {
         Vector3 cell_atom = lattice_constant
                             * ( bravais_vectors[0] * cell_atoms[iatom][0] + bravais_vectors[1] * cell_atoms[iatom][1]

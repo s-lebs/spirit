@@ -63,19 +63,23 @@ std::string LogEntryToString( LogEntry entry, bool braces_separators = true );
 std::string LogBlockToString( std::vector<LogEntry> entries, bool braces_separators = true );
 
 /*
-The Logging Handler keeps all Log Entries and provides methods to dump or append the entire Log to a file.
-Note: the Handler is a singleton.
-*/
+ * The Logging handler keeps all Log Entries and provides methods to dump or append the entire Log to a file.
+ * Note: the handler is a singleton.
+ */
 class LoggingHandler
 {
 public:
     // Send Log messages
-    void Send( Log_Level level, Log_Sender sender, std::string message, int idx_image = -1, int idx_chain = -1 );
-    void operator()( Log_Level level, Log_Sender sender, std::string message, int idx_image = -1, int idx_chain = -1 );
-    void SendBlock(
-        Log_Level level, Log_Sender sender, std::vector<std::string> messages, int idx_image = -1, int idx_chain = -1 );
+    void
+    Send( Log_Level level, Log_Sender sender, const std::string & message, int idx_image = -1, int idx_chain = -1 );
     void operator()(
-        Log_Level level, Log_Sender sender, std::vector<std::string> messages, int idx_image = -1, int idx_chain = -1 );
+        Log_Level level, Log_Sender sender, const std::string & message, int idx_image = -1, int idx_chain = -1 );
+    void SendBlock(
+        Log_Level level, Log_Sender sender, const std::vector<std::string> & messages, int idx_image = -1,
+        int idx_chain = -1 );
+    void operator()(
+        Log_Level level, Log_Sender sender, const std::vector<std::string> & messages, int idx_image = -1,
+        int idx_chain = -1 );
 
     // Get the Log's entries
     std::vector<LogEntry> GetEntries();
@@ -97,6 +101,7 @@ public:
     bool messages_to_console;
     // All messages up to (including) this level are printed to console
     Log_Level level_console;
+
     // Save initial input (config / defaults) - note this is done by State_Setup
     bool save_input_initial;
     // Save input at shutdown (config / defaults) - note this is done by State_Delete
@@ -106,6 +111,7 @@ public:
     bool save_positions_final;
     bool save_neighbours_initial;
     bool save_neighbours_final;
+
     // Name of the Log file
     std::string fileName;
     // Number of Log entries
@@ -129,27 +135,32 @@ public:
 private:
     // Constructor
     LoggingHandler();
+    ~LoggingHandler() = default;
 
     // Get the Log's entries, filtered for level, sender and indices
     std::vector<LogEntry> Filter(
         Log_Level level = Log_Level::All, Log_Sender sender = Log_Sender::All, int idx_image = -1, int idx_chain = -1 );
 
-    int no_dumped;
+    int n_dumped;
     std::vector<LogEntry> log_entries;
 
     // Mutex for thread-safety
     std::mutex mutex;
 
 public:
-    // We can use the better technique of deleting the methods we don't want.
-    LoggingHandler( LoggingHandler const & ) = delete;
-    void operator=( LoggingHandler const & ) = delete;
+    /*
+     * Note: Scott Meyers mentions in his Effective Modern C++ book, that deleted functions should generally be public
+     * as it results in better error messages due to the compilers behavior to check accessibility before deleted status
+     */
 
-    // Note: Scott Meyers mentions in his Effective Modern
-    //       C++ book, that deleted functions should generally
-    //       be public as it results in better error messages
-    //       due to the compilers behavior to check accessibility
-    //       before deleted status
+    // Copy-constructor
+    LoggingHandler( LoggingHandler const & ) = delete;
+    // Copy-assignment operator
+    void operator=( LoggingHandler const & ) = delete;
+    // Move-constructor
+    LoggingHandler( LoggingHandler const && ) = delete;
+    // Move-assignment operator
+    void operator=( LoggingHandler const && ) = delete;
 };
 
 } // namespace Utility

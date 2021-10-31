@@ -134,7 +134,7 @@ try
     else
         lattice_name = fmt::format("<unknown index: {}>", lattice_type);
 
-    std::vector<Vector3> bravais_vectors;
+    std::array<Vector3, 3> bravais_vectors;
     if (lattice_type      == Bravais_Lattice_SC)
         bravais_vectors = Data::Geometry::BravaisVectorsSC();
     else if (lattice_type == Bravais_Lattice_FCC)
@@ -197,21 +197,21 @@ try
     auto& old_geometry = *state->active_image->geometry;
 
     // The new arrays
-    std::vector<Vector3> cell_atoms(0);
-    std::vector<int>     iatom(0);
-    std::vector<int>     atom_type(0);
-    std::vector<scalar>  mu_s(0);
-    std::vector<scalar>  concentration(0);
+    std::vector<Vector3>      cell_atoms(0);
+    std::vector<std::size_t>  iatom(0);
+    std::vector<std::int64_t> atom_type(0);
+    std::vector<scalar>       mu_s(0);
+    std::vector<scalar>       concentration(0);
 
     // Basis cell atoms
     for (int i=0; i<n_atoms; ++i)
-        cell_atoms.push_back(Vector3{ atoms[i][0], atoms[i][1], atoms[i][2] });
+        cell_atoms.emplace_back( atoms[i][0], atoms[i][1], atoms[i][2] );
 
     // In the regular case, we re-generate information to make sure every atom
     // has its set of information
     if( !old_geometry.cell_composition.disordered )
     {
-        for (int i=0; i<n_atoms; ++i)
+        for (std::size_t i=0; i < static_cast<std::size_t>(n_atoms); ++i)
         {
             iatom.push_back(i);
             if( i < old_geometry.n_cell_atoms )
@@ -230,10 +230,10 @@ try
     // still valid. This may lead to new atoms not having any mu_s information.
     else
     {
-        for( int i=0; i<old_geometry.cell_composition.iatom.size(); ++i )
+        for( std::size_t i=0; i < old_geometry.cell_composition.iatom.size(); ++i )
         {
             // If the atom index is within range, we keep the information
-            if( old_geometry.cell_composition.iatom[i] < n_atoms )
+            if( old_geometry.cell_composition.iatom[i] < static_cast<std::size_t>(n_atoms) )
             {
                 atom_type.push_back(old_geometry.cell_composition.atom_type[i]);
                 mu_s.push_back(old_geometry.cell_composition.mu_s[i]);
@@ -329,7 +329,7 @@ void Geometry_Set_Bravais_Vectors(State *state, float ta[3], float tb[3], float 
 try
 {
     // The new Bravais vectors
-    std::vector<Vector3> bravais_vectors{
+    std::array<Vector3, 3> bravais_vectors{
         Vector3{ta[0], ta[1], ta[2]},
         Vector3{tb[0], tb[1], tb[2]},
         Vector3{tc[0], tc[1], tc[2]}};

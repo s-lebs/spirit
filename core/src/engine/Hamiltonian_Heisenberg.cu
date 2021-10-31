@@ -551,7 +551,7 @@ namespace Engine
     }
 
 
-    scalar Hamiltonian_Heisenberg::Energy_Single_Spin(int ispin, const vectorfield & spins)
+    scalar Hamiltonian_Heisenberg::Energy_Single_Spin(std::size_t ispin, const vectorfield & spins)
     {
         scalar Energy = 0;
         if( check_atom_type(this->geometry->atom_types[ispin]) )

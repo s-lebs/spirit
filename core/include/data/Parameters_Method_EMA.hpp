@@ -10,11 +10,11 @@ namespace Data
 // EMA_Parameters contains all EMA information about the spin system
 struct Parameters_Method_EMA : Parameters_Method
 {
-    int n_modes       = 10;
-    int n_mode_follow = 0;
-    scalar frequency  = 0.02;
-    scalar amplitude  = 1;
-    bool snapshot     = false;
+    std::size_t n_modes       = 10;
+    std::size_t n_mode_follow = 0;
+    scalar frequency          = 0.02;
+    scalar amplitude          = 1;
+    bool snapshot             = false;
 
     // ----------------- Output --------------
     // Energy output settings

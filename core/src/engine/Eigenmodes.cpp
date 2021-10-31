@@ -53,7 +53,7 @@ namespace Engine
 
             // vectorfield mode(nos, Vector3{1, 0, 0});
             vectorfield spins_initial = *system->spins;
-        
+
             Log( Log_Level::Info, Log_Sender::EMA, fmt::format("Started calculation of {} Eigenmodes ", n_modes ),
                 idx_img, idx_chain );
 
@@ -78,13 +78,13 @@ namespace Engine
             MatrixX tangent_basis = MatrixX::Zero(3*nos, 2*nos);
             VectorX eigenvalues;
             MatrixX eigenvectors;
-            bool successful = Eigenmodes::Hessian_Partial_Spectrum(system->ema_parameters, spins_initial, gradient, hessian, 
+            bool successful = Eigenmodes::Hessian_Partial_Spectrum(system->ema_parameters, spins_initial, gradient, hessian,
                 n_modes, tangent_basis, hessian_constrained, eigenvalues, eigenvectors);
 
             if (successful)
             {
                 // get every mode and save it to system->modes
-                for (int i=0; i<n_modes; i++)
+                for (std::size_t i=0; i<n_modes; i++)
                 {
                     // Extract the minimum mode (transform evec_lowest_2N back to 3N)
                     VectorX evec_3N = tangent_basis * eigenvectors.col(i);
@@ -93,7 +93,7 @@ namespace Engine
                     system->modes[i] = std::shared_ptr<vectorfield>(new vectorfield(nos, Vector3{1,0,0}));
 
                     // Set the modes
-                    for (int j=0; j<nos; j++)
+                    for (std::size_t j=0; j<nos; j++)
                         (*system->modes[i])[j] = {evec_3N[3*j], evec_3N[3*j+1], evec_3N[3*j+2]};
 
                     // get the eigenvalues
@@ -103,8 +103,8 @@ namespace Engine
                 Log( Log_Level::Info, Log_Sender::All, fmt::format("Finished calculation of {} Eigenmodes ", n_modes ),
                     idx_img, idx_chain );
 
-                int ev_print = std::min(n_modes, 100);
-                Log( Log_Level::Info, Log_Sender::EMA, fmt::format("Eigenvalues: {}", 
+                std::size_t ev_print = std::min(n_modes, static_cast<std::size_t>(100));
+                Log( Log_Level::Info, Log_Sender::EMA, fmt::format("Eigenvalues: {}",
                     eigenvalues.head( ev_print ).transpose() ), idx_img, idx_chain );
             }
             else
@@ -114,7 +114,7 @@ namespace Engine
                     idx_img, idx_chain );
             }
         }
-        
+
         bool Hessian_Full_Spectrum(const std::shared_ptr<Data::Parameters_Method> parameters,
             const vectorfield & spins, const vectorfield & gradient, const MatrixX & hessian,
             MatrixX & tangent_basis, MatrixX & hessian_constrained, VectorX & eigenvalues, MatrixX & eigenvectors)
@@ -130,7 +130,7 @@ namespace Engine
             // Manifoldmath::hessian_weingarten(spins, gradient, hessian, tangent_basis, hessian_constrained);
             // Manifoldmath::hessian_spherical(spins, gradient, hessian, tangent_basis, hessian_constrained);
             // Manifoldmath::hessian_covariant(spins, gradient, hessian, tangent_basis, hessian_constrained);
-            
+
             // Create and initialize a Eigen solver. Note: the hessian matrix should be symmetric!
             Eigen::SelfAdjointEigenSolver<MatrixX> hessian_spectrum(hessian_constrained);
 
@@ -165,7 +165,7 @@ namespace Engine
             // Manifoldmath::hessian_weingarten(spins, gradient, hessian, tangent_basis, hessian_constrained);
             // Manifoldmath::hessian_spherical(spins, gradient, hessian, tangent_basis, hessian_constrained);
             // Manifoldmath::hessian_covariant(spins, gradient, hessian, tangent_basis, hessian_constrained);
-            
+
             // Remove degrees of freedom of pinned spins
             #ifdef SPIRIT_ENABLE_PINNING
                 for (int i=0; i<nos; ++i)

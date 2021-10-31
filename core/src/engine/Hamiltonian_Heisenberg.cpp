@@ -455,7 +455,7 @@ namespace Engine
     }
 
 
-    scalar Hamiltonian_Heisenberg::Energy_Single_Spin(int ispin, const vectorfield & spins)
+    scalar Hamiltonian_Heisenberg::Energy_Single_Spin(std::size_t ispin, const vectorfield & spins)
     {
         scalar Energy = 0;
         if( check_atom_type(this->geometry->atom_types[ispin]) )
@@ -1358,7 +1358,7 @@ namespace Engine
         #else
             field<int*> temp_s = {&spin_stride.a, &spin_stride.b, &spin_stride.c, &spin_stride.comp, &spin_stride.basis};
             field<int*> temp_d = {&dipole_stride.a, &dipole_stride.b, &dipole_stride.c, &dipole_stride.comp, &dipole_stride.basis};;
-            FFT::get_strides(temp_s, {n_cells_padded[0], n_cells_padded[1], n_cells_padded[2], 3, this->geometry->n_cell_atoms});
+            FFT::get_strides(temp_s, {n_cells_padded[0], n_cells_padded[1], n_cells_padded[2], 3, static_cast<int>(this->geometry->n_cell_atoms)});
             FFT::get_strides(temp_d, {n_cells_padded[0], n_cells_padded[1], n_cells_padded[2], 6, n_inter_sublattice});
             it_bounds_pointwise_mult  = {   n_cells_padded[0],
                                             n_cells_padded[1],

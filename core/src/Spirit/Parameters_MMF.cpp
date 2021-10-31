@@ -182,7 +182,7 @@ void Parameters_MMF_Set_N_Modes(State *state, int n_modes, int idx_image, int id
             auto p = image->mmf_parameters;
             p->n_modes = n_modes;
             image->modes.resize(n_modes);
-            p->n_mode_follow = std::min(p->n_mode_follow, n_modes);
+            p->n_mode_follow = std::min(p->n_mode_follow, static_cast<std::size_t>(n_modes));
             image->Unlock();
 
             Log(Utility::Log_Level::Parameter, Utility::Log_Sender::API,

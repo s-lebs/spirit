@@ -27,6 +27,7 @@ namespace Engine
 
         // Decompose a vector into numbers of translations in a basis
         Vector3 decompose(const Vector3 & v, const std::vector<Vector3> & basis);
+        Vector3 decompose(const Vector3 & v, const std::array<Vector3, 3> & basis);
 
         /////////////////////////////////////////////////////////////////
         //////// Translating across the lattice

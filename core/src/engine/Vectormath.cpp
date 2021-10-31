@@ -463,6 +463,12 @@ namespace Vectormath
         return A.colPivHouseholderQr().solve(v);
     }
 
+    Vector3 decompose(const Vector3 & v, const std::array<Vector3, 3> & basis)
+    {
+        Eigen::Ref<const Matrix3> A = Eigen::Map<const Matrix3>(basis[0].data());
+        return A.colPivHouseholderQr().solve(v);
+    }
+
     /////////////////////////////////////////////////////////////////
 
     std::array<scalar,3> Magnetization(const vectorfield & vf)
