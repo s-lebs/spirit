@@ -43,6 +43,19 @@ jobs:
     - name: 📁 Create build folder
       run: cmake -E make_directory ${{runner.workspace}}/build
 
+    - name: ⚙ Install OpenMP on macos
+      if: matrix.openmp == true && matrix.os == 'macos-latest'
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      run: |
+        brew install llvm
+        brew install libomp
+        llvm_path="$(brew --prefix llvm)"
+        USER_COMPILER_C="${llvm_path}/bin/clang"
+        USER_COMPILER_CXX="${llvm_path}/bin/clang++"
+        OpenMP_INCLUDE_DIR="$(brew --prefix libomp)"
+        echo CMAKE_FLAGS="$CMAKE_FLAGS -DOpenMP_CXX_INCLUDE_DIR=${OpenMP_INCLUDE_DIR} -DCMAKE_C_COMPILER=${USER_COMPILER_C} -DCMAKE_CXX_COMPILER=${USER_COMPILER_CXX}" >> $GITHUB_ENV
+
     - name: ⚙ Configure with OpenMP
       if: matrix.openmp == true
       shell: bash
