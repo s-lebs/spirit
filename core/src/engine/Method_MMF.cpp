@@ -211,9 +211,6 @@ void Method_MMF<solver>::Calculate_Force_Spectra_Matrix(
     this->systems[0]->hamiltonian->Gradient( image, gradient );
     Vectormath::set_c_a( 1, gradient, gradient, this->systems[0]->geometry->mask_unpinned );
 
-    // The Hessian (unprojected)
-    this->systems[0]->hamiltonian->Hessian( image, hessian );
-
     Eigen::Ref<VectorX> image_3N    = Eigen::Map<VectorX>( image[0].data(), 3 * nos );
     Eigen::Ref<VectorX> gradient_3N = Eigen::Map<VectorX>( gradient[0].data(), 3 * nos );
 
