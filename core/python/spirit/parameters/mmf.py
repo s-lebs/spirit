@@ -104,6 +104,26 @@ def set_n_mode_follow(p_state, n_mode, idx_image=-1, idx_chain=-1):
     """Set the index of the mode to follow."""
     _MMF_Set_N_Mode_Follow(ctypes.c_void_p(p_state), ctypes.c_int(n_mode),
                           ctypes.c_int(idx_image), ctypes.c_int(idx_chain))
+    
+_MMF_Set_N_GD_Iterations = _spirit.Parameters_MMF_Set_N_GD_Iterations
+_MMF_Set_N_GD_Iterations.argtypes =[ctypes.c_void_p, ctypes.c_int,
+                                    ctypes.c_int, ctypes.c_int]
+_MMF_Set_N_GD_Iterations.restype = None
+def set_n_GD_iterations(p_state,n_iterations,idx_image=-1,idx_chain=-1):
+    """Set the number of iterations used for the Gradient Decent Algorithm to calculate eigenvectors"""
+    _MMF_Set_N_GD_Iterations(ctypes.c_void_p(p_state), ctypes.c_int(n_iterations),
+                          ctypes.c_int(idx_image), ctypes.c_int(idx_chain))
+
+_MMF_Set_N_GD_Steps = _spirit.Parameters_MMF_Set_N_GD_Steps
+_MMF_Set_N_GD_Steps.argtypes =[ctypes.c_void_p, ctypes.c_int,
+                                    ctypes.c_int, ctypes.c_int]
+_MMF_Set_N_GD_Steps.restype = None
+def set_n_GD_steps(p_state,n_steps,idx_image=-1,idx_chain=-1):
+    """Set the number of Gradient Decent steps done between two SparseHessianPartialSpectrum steps
+    -n_steps: number of steps to be done +1    
+    """
+    _MMF_Set_N_GD_Steps(ctypes.c_void_p(p_state), ctypes.c_int(n_steps),
+                          ctypes.c_int(idx_image), ctypes.c_int(idx_chain))
 
 ## ---------------------------------- Get ----------------------------------
 
