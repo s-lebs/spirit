@@ -214,6 +214,66 @@ catch( ... )
     spirit_handle_exception_api( idx_image, idx_chain );
 }
 
+void Parameters_MMF_Set_N_GD_Iterations( State * state, int n_iterations, int idx_image, int idx_chain ) noexcept
+try
+{
+    std::shared_ptr<Data::Spin_System> image;
+    std::shared_ptr<Data::Spin_System_Chain> chain;
+
+    // Fetch correct indices and pointers
+    from_indices( state, idx_image, idx_chain, image, chain );
+
+    auto p = image->mmf_parameters;
+    if( n_iterations < 0 )
+    {
+        Log( Utility::Log_Level::Debug, Utility::Log_Sender::API, fmt::format( "Illegal value of number of GD iterations" ),
+             idx_image, idx_chain );
+    }
+    else
+    {
+        image->Lock();
+        p->n_GD_iterations = n_iterations;
+        image->Unlock();
+
+        Log( Utility::Log_Level::Parameter, Utility::Log_Sender::API,
+             fmt::format( "Set number of Gradient Decent iterations to = {}", n_iterations ), idx_image, idx_chain );
+    }
+}
+catch( ... )
+{
+    spirit_handle_exception_api( idx_image, idx_chain );
+}
+
+void Parameters_MMF_Set_N_GD_Steps( State * state, int n_steps, int idx_image, int idx_chain ) noexcept
+try
+{
+    std::shared_ptr<Data::Spin_System> image;
+    std::shared_ptr<Data::Spin_System_Chain> chain;
+
+    // Fetch correct indices and pointers
+    from_indices( state, idx_image, idx_chain, image, chain );
+
+    auto p = image->mmf_parameters;
+    if( n_steps < 0 )
+    {
+        Log( Utility::Log_Level::Debug, Utility::Log_Sender::API, fmt::format( "Illegal value of number of GD steps" ),
+             idx_image, idx_chain );
+    }
+    else
+    {
+        image->Lock();
+        p->n_GD_steps = n_steps;
+        image->Unlock();
+
+        Log( Utility::Log_Level::Parameter, Utility::Log_Sender::API,
+             fmt::format( "Going to do {} Gradient Decent steps between Sparse_Hessian_Partial_Spectrum-steps", n_steps-1 ), idx_image, idx_chain );
+    }
+}
+catch( ... )
+{
+    spirit_handle_exception_api( idx_image, idx_chain );
+}
+
 /*------------------------------------------------------------------------------------------------------ */
 /*---------------------------------- Get MMF ----------------------------------------------------------- */
 /*------------------------------------------------------------------------------------------------------ */

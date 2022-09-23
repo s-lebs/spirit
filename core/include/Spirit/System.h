@@ -48,6 +48,14 @@ The array is contiguous and of shape (NOS, 3).
 */
 PREFIX scalar * System_Get_Eigenmode( State * state, int idx_mode, int idx_image = -1, int idx_chain = -1 ) SUFFIX;
 
+/*
+Returns a pointer to the data of the N'th 2N eigenmode of a spin system.
+
+The array is contiguous and of shape (NOS, 2).
+*/
+
+PREFIX scalar * System_Get_2NEigenmode( State * state, int idx_mode, int idx_image= -1, int idx_chain = -1 ) SUFFIX;
+
 // Returns the reaction coordinate of a system along the chain.
 PREFIX float System_Get_Rx( State * state, int idx_image = -1, int idx_chain = -1 ) SUFFIX;
 
@@ -74,6 +82,9 @@ PREFIX void System_Update_Data( State * state, int idx_image = -1, int idx_chain
 
 // Update Eigenmodes (primarily for visualisation or saving)
 PREFIX void System_Update_Eigenmodes( State * state, int idx_image = -1, int idx_chain = -1 ) SUFFIX;
+
+//Transfer the last calculated 2N modes into 3N modes
+PREFIX void System_Transfer_Eigenmodes( State * state, int idx_image = -1, int idx_chain = -1 ) SUFFIX;
 
 #include "DLL_Undefine_Export.h"
 #endif

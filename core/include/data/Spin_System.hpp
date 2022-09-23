@@ -49,6 +49,8 @@ public:
     int nos;
     // Eigenmodes of the system: modes[nem][dim][nos]
     std::vector<std::shared_ptr<vectorfield>> modes;
+    // 2N Eigenmodes of the system: modes[nem][dim][nos]
+    std::vector<std::shared_ptr<vectorfield>> modes2N;
     // Eigenvalues of the system
     std::vector<scalar> eigenvalues;
     // Orientations of the spins: spins[dim][nos]

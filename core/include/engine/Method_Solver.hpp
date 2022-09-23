@@ -71,10 +71,6 @@ public:
     // Iteration represents one iteration of a certain Solver
     virtual void Iteration() override;
 
-protected:
-    // Prepare random numbers for thermal fields, if needed
-    virtual void Prepare_Thermal_Field() {}
-
     /*
      * Calculate Forces onto Systems
      *   This is currently overridden by methods to specify how the forces on a set of configurations should be
@@ -105,6 +101,11 @@ protected:
              "Tried to use Method_Solver::Calculate_Force_Virtual() of the Method_Solver class!", this->idx_image,
              this->idx_chain );
     }
+
+protected:
+    // Prepare random numbers for thermal fields, if needed
+    virtual void Prepare_Thermal_Field() {}
+
 
     // Calculate maximum of absolute values of force components for a spin configuration
     virtual scalar Force_on_Image_MaxAbsComponent( const vectorfield & image, vectorfield & force ) final;

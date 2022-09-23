@@ -26,8 +26,10 @@ try : iteration_allowed( iteration_allowed ), singleshot_allowed( false ), hamil
     // Initialize Spins Array
     this->spins = std::shared_ptr<vectorfield>( new vectorfield( nos ) );
 
-    // Initialize Modes container
+    // Initialize Modes container for 3N modes
     this->modes = std::vector<std::shared_ptr<vectorfield>>( this->ema_parameters->n_modes, NULL );
+    // Initialize Modes container for 2N modes
+    this->modes2N = std::vector<std::shared_ptr<vectorfield>>( this->ema_parameters->n_modes, NULL );
 
     // Initialize Eigenvalues vector
     this->eigenvalues = std::vector<scalar>( this->modes.size(), 0 );
@@ -50,12 +52,18 @@ try
     this->nos         = other.nos;
     this->spins       = std::shared_ptr<vectorfield>( new vectorfield( *other.spins ) );
     this->modes       = std::vector<std::shared_ptr<vectorfield>>( other.modes.size(), NULL );
+    this->modes2N       = std::vector<std::shared_ptr<vectorfield>>( other.modes2N.size(), NULL );
     this->eigenvalues = other.eigenvalues;
 
     // copy the modes
     for( int i = 0; i < other.modes.size(); i++ )
         if( other.modes[i] != NULL )
             this->modes[i] = std::shared_ptr<vectorfield>( new vectorfield( *other.modes[i] ) );
+
+        // copy the 2N modes
+    for( int i = 0; i < other.modes2N.size(); i++ )
+        if( other.modes2N[i] != NULL )
+            this->modes2N[i] = std::shared_ptr<vectorfield>( new vectorfield( *other.modes2N[i] ) );
 
     this->E               = other.E;
     this->E_array         = other.E_array;
@@ -95,12 +103,18 @@ try
         this->nos         = other.nos;
         this->spins       = std::shared_ptr<vectorfield>( new vectorfield( *other.spins ) );
         this->modes       = std::vector<std::shared_ptr<vectorfield>>( other.modes.size(), NULL );
+        this->modes2N     = std::vector<std::shared_ptr<vectorfield>>( other.modes2N.size(), NULL );
         this->eigenvalues = other.eigenvalues;
 
         // copy the modes
         for( int i = 0; i < other.modes.size(); i++ )
             if( other.modes[i] != NULL )
                 this->modes[i] = std::shared_ptr<vectorfield>( new vectorfield( *other.modes[i] ) );
+
+                // copy the 2N modes
+        for( int i = 0; i < other.modes2N.size(); i++ )
+            if( other.modes2N[i] != NULL )
+                this->modes2N[i] = std::shared_ptr<vectorfield>( new vectorfield( *other.modes2N[i] ) );
 
         this->E               = other.E;
         this->E_array         = other.E_array;

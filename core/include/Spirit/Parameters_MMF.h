@@ -81,6 +81,10 @@ PREFIX void Parameters_MMF_Set_N_Modes( State * state, int n_modes, int idx_imag
 PREFIX void
 Parameters_MMF_Set_N_Mode_Follow( State * state, int n_mode_follow, int idx_image = -1, int idx_chain = -1 ) SUFFIX;
 
+PREFIX void Parameters_MMF_Set_N_GD_Iterations( State * state, int n_iterations, int idx_image, int idx_chain ) SUFFIX;
+
+PREFIX void Parameters_MMF_Set_N_GD_Steps( State * state, int n_steps, int idx_image, int idx_chain ) SUFFIX;
+
 /*
 Get Output
 --------------------------------------------------------------------

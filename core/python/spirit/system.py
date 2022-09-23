@@ -79,6 +79,22 @@ def get_eigenmode(p_state, idx_mode, idx_image=-1, idx_chain=-1):
     array_view.shape = (nos, 3)
     return array_view
 
+### Get Pointer to an 2n eigenmode
+# NOTE: Changing the values of the array_view one can alter the value of the data of the state
+_Get_2NEigenmode            = _spirit.System_Get_2NEigenmode
+_Get_2NEigenmode.argtypes   = [ctypes.c_void_p, ctypes.c_int, ctypes.c_int, ctypes.c_int]
+_Get_2NEigenmode.restype    = ctypes.POINTER(scalar)
+def get_2Neigenmode(p_state, idx_mode, idx_image=-1, idx_chain=-1):
+    nos = get_nos(p_state, idx_image, idx_chain)
+    ArrayType = scalar*3*nos
+    Data = _Get_2NEigenmode(ctypes.c_void_p(p_state), ctypes.c_int(idx_mode),
+                          ctypes.c_int(idx_image), ctypes.c_int(idx_chain))
+    array_pointer = ctypes.cast(Data, ctypes.POINTER(ArrayType))
+    array = frombuffer(array_pointer.contents, dtype=scalar)
+    array_view = array.view()
+    array_view.shape = (nos, 3)
+    return array_view
+
 ### Get total Energy
 _Get_Energy          = _spirit.System_Get_Energy
 _Get_Energy.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_int]
@@ -93,7 +109,7 @@ _Get_Eigenvalues          = _spirit.System_Get_Eigenvalues
 _Get_Eigenvalues.argtypes = [ctypes.c_void_p, ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.c_int]
 _Get_Eigenvalues.restype  = None
 def get_eigenvalues(p_state, idx_image=-1, idx_chain=-1):
-    noe = parameters.ema.getNModes(p_state, idx_image, idx_chain)
+    noe = parameters.ema.get_n_modes(p_state, idx_image, idx_chain)
     eigenvalues = (noe*ctypes.c_float)()
     _Get_Eigenvalues(ctypes.c_void_p(p_state), eigenvalues, ctypes.c_int(idx_image), ctypes.c_int(idx_chain))
     return eigenvalues
@@ -149,6 +165,18 @@ def update_eigenmodes(p_state, idx_image=-1, idx_chain=-1):
     (e.g. writing them to a file).
     """
     spiritlib.wrap_function(_Eigenmodes, [ctypes.c_void_p(p_state), ctypes.c_int(idx_image),
+                                         ctypes.c_int(idx_chain)])
+    
+### Turn eigenmodes from 2N to 3N
+_Trans_Eigenmodes          = _spirit.System_Transfer_Eigenmodes
+_Trans_Eigenmodes.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_int]
+_Trans_Eigenmodes.restype  = None
+def transfer_eigenmodes(p_state, idx_image=-1, idx_chain=-1):
+    """Calculates eigenmodes of a system according to EMA parameters.
+    This needs to be called or eigenmodes need to be read in before they can be used by other functions
+    (e.g. writing them to a file).
+    """
+    spiritlib.wrap_function(_Trans_Eigenmodes, [ctypes.c_void_p(p_state), ctypes.c_int(idx_image),
                                          ctypes.c_int(idx_chain)])
 
 ### Print Energy array

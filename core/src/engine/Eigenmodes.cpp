@@ -12,6 +12,9 @@
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 
+#include <iostream>
+#include <fstream>
+
 using Utility::Log_Level;
 using Utility::Log_Sender;
 
@@ -56,7 +59,7 @@ void Calculate_Eigenmodes( std::shared_ptr<Data::Spin_System> system, int idx_im
 {
     int nos = system->nos;
 
-    Check_Eigenmode_Parameters( system );
+    //Check_Eigenmode_Parameters( system );
 
     auto & n_modes = system->ema_parameters->n_modes;
 
@@ -82,7 +85,7 @@ void Calculate_Eigenmodes( std::shared_ptr<Data::Spin_System> system, int idx_im
     MatrixX eigenvectors;
     SpMatrixX tangent_basis = SpMatrixX( 3 * nos, 2 * nos );
 
-    bool sparse = system->ema_parameters->sparse;
+    bool sparse = true;//system->ema_parameters->sparse;
     bool successful;
     if( sparse )
     {
@@ -126,6 +129,12 @@ void Calculate_Eigenmodes( std::shared_ptr<Data::Spin_System> system, int idx_im
             // Set the modes
             for( int j = 0; j < nos; j++ )
                 ( *system->modes[i] )[j] = { evec_3N[3 * j], evec_3N[3 * j + 1], evec_3N[3 * j + 2] };
+
+            // dynamically allocate the system->modes
+            system->modes2N[i] = std::shared_ptr<vectorfield>( new vectorfield( nos, Vector3{ 1, 0,0} ) );
+            // Set the modes
+            for( int j = 0; j < nos; j++ )
+                ( *system->modes2N[i] )[j] = { eigenvectors.col(i)[2 * j], eigenvectors.col(i)[2 * j + 1],0};
 
             // get the eigenvalues
             system->eigenvalues[i] = eigenvalues( i );
@@ -262,7 +271,7 @@ bool Sparse_Hessian_Partial_Spectrum(
 
     hessian_constrained.makeCompressed();
     int ncv = std::min(2*nos, std::max(2*n_modes + 1, 20)); // This is the default value used by scipy.sparse
-    int max_iter = 20*nos;
+    int max_iter = 100*nos;
 
     // Create the Spectra Matrix product operation
     Spectra::SparseSymMatProd<scalar> op( hessian_constrained );
@@ -282,6 +291,174 @@ bool Sparse_Hessian_Partial_Spectrum(
 
     // Return whether the calculation was successful
     return ( hessian_spectrum.info() == Spectra::SUCCESSFUL ) && ( nconv > 0 );
+}
+
+
+bool computeLowEV(const std::shared_ptr<Data::Parameters_Method> parameters, const vectorfield & spins, const vectorfield & gradient,
+    const SpMatrixX & hessian, int n_modes, SpMatrixX & tangent_basis, SpMatrixX & hessian_constrained,
+    VectorX & eigenvalues, MatrixX & eigenvectors, MatrixX & prev, int GDIterations)
+{
+    int nos = spins.size();
+
+    // Restrict number of calculated modes to [1,2N)
+    n_modes = std::max( 1, std::min( 2 * nos - 2, n_modes ) );
+
+    // Calculate the final Hessian to use for the minimum mode
+    Manifoldmath::sparse_tangent_basis_spherical( spins, tangent_basis );
+
+    SpMatrixX hessian_constrained_3N = SpMatrixX( 3 * nos, 3 * nos );
+    Manifoldmath::sparse_hessian_bordered_3N( spins, gradient, hessian, hessian_constrained_3N );
+
+    hessian_constrained = tangent_basis.transpose() * hessian_constrained_3N * tangent_basis;
+
+    hessian_constrained.makeCompressed();
+
+    SpMatrixX matrix = hessian_constrained;
+
+    int dimM = matrix.rows();
+    double R;
+    bool successful=1;
+    int nit = 100000;
+    int l=0;
+    
+
+    VectorX Vec(dimM);
+    VectorX Vec1(dimM);
+    VectorX MatV(dimM);
+    VectorX gradR;
+
+
+    if(prev.size()==0)
+    {
+        for(int i=0;i<=dimM;i++)
+        {
+            Vec1(i)=rand()%100;
+        }
+    
+    Vec1.normalize();
+    }
+    //std::cout <<"Starting Calculation of "<<n_modes<<" eigenvalues"<< std::endl;
+
+    for(int n=1;n<=n_modes;n+=1)
+    {	
+        if(prev.size()==0)
+    	{
+       	    Vec=Vec1;
+	    }
+	    else
+	    {
+	        Vec=prev.col(n-1);
+	    }
+
+        for(int s=0; s<nit;s++)
+        {
+            for(int m=0;m<n;m+=1)
+            {
+                if(m==0)
+                {
+                    MatV=matrix*Vec;
+                }
+                else
+                {
+                    MatV+=5*eigenvectors.col(m-1).dot(Vec)*eigenvectors.col(m-1);
+                }
+            }
+
+            R=1/(Vec.norm()*Vec.norm())*Vec.transpose()*MatV;
+
+            gradR=MatV-R*Vec;
+            
+            
+            if(gradR.norm()<5e-12 || s==GDIterations)
+            {
+                eigenvalues.conservativeResize(eigenvalues.size()+1);
+                eigenvalues(n-1)=R;
+                eigenvectors.conservativeResize(dimM,eigenvectors.cols()+1);
+                eigenvectors.col(n-1)=Vec;
+                //std::cout <<"eigenvalue " << n<<" converged after "<< s <<" steps as R="<<R<<std::endl;
+                break;
+            }
+
+            if(10000<gradR.norm())/* something to check if the gradient is diverging*/
+            {   
+                std::cout <<"The gradient does not converge: |gR|="<< gradR.norm()<< std::endl;
+                successful=0;
+                break;
+	        }
+ 
+            Vec=Vec-0.02*gradR;
+
+            Vec.normalize();
+            
+        }
+    }
+
+    // sort eigenvectors and eigenvalues (small->big)
+    float curr, min;
+    int minj;
+    
+    for (int i=0; i<n_modes-1;i++)
+    {
+        curr=eigenvalues(i);
+        min=curr;
+        minj=i;
+        for (int j=i;j<n_modes;j++)
+        {
+            if(eigenvalues(j)<min)
+            {
+                min=eigenvalues(j);
+                minj=j;
+            }
+        }
+        if (min!=curr)
+        {
+            Vec=eigenvectors.col(i);
+            eigenvectors.col(i)=eigenvectors.col(minj);
+            eigenvalues(i)=eigenvalues(minj);
+            eigenvectors.col(minj)=Vec;
+            eigenvalues(minj)=curr;
+
+        }
+    }
+
+    // Return whether the calculation was successful
+    return ( successful );
+}
+
+void Transfer_Eigenmodes( std::shared_ptr<Data::Spin_System> system, int idx_img, int idx_chain )
+{
+    int nos = system->nos;
+    MatrixX eigenvectors;
+    SpMatrixX tangent_basis = SpMatrixX( 3 * nos, 2 * nos );
+
+    int n_modes=(system->modes2N).size();
+    vectorfield spins = *system->spins;
+
+    // calculate tangent_basis
+    Manifoldmath::sparse_tangent_basis_spherical( spins, tangent_basis );
+
+    // write 2N modes into long vectors (like in Sparse Hessian Spectra Matrix)
+    for(int i=0;i< n_modes;i++)
+    {
+        eigenvectors.conservativeResize(2*nos,eigenvectors.cols()+1);
+        for( int j = 0; j < nos; j++ )
+        {
+            (eigenvectors.col(i))[2*j]=((*system->modes2N[i])[j])[0];
+            (eigenvectors.col(i))[2*j+1]=((*system->modes2N[i] )[j])[1];
+        }
+    }   
+    // get every mode and save it to system->modes
+    for( int i = 0; i < n_modes; i++ )
+    {
+        // Extract the minimum mode (transform evec_lowest_2N back to 3N)
+        VectorX evec_3N = tangent_basis * eigenvectors.col( i );
+        // dynamically allocate the system->modes
+        system->modes[i] = std::shared_ptr<vectorfield>( new vectorfield( nos, Vector3{ 1, 0, 0 } ) );
+        // Set the modes
+        for( int j = 0; j < nos; j++ )
+            ( *system->modes[i] )[j] = { evec_3N[3 * j], evec_3N[3 * j + 1], evec_3N[3 * j + 2] };
+
+    }
 }
 
 } // namespace Eigenmodes

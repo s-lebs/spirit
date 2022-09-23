@@ -1,4 +1,4 @@
-﻿#include <engine/Neighbours.hpp>
+#include <engine/Neighbours.hpp>
 #include <engine/Vectormath.hpp>
 #include <io/Filter_File_Handle.hpp>
 #include <io/IO.hpp>
@@ -1135,6 +1135,8 @@ std::unique_ptr<Data::Parameters_Method_MMF> Parameters_Method_MMF_from_Config( 
             config_file_handle.Read_Single( parameters->output_configuration_step, "mmf_output_configuration_step" );
             config_file_handle.Read_Single(
                 parameters->output_configuration_archive, "mmf_output_configuration_archive" );
+            config_file_handle.Read_Single( parameters->sparse, "mmf_sparse" );
+            config_file_handle.Read_Single( parameters->save_modes, "mmf_save_modes" );
             config_file_handle.Read_Single( output_configuration_filetype, "mmf_output_configuration_filetype" );
             parameters->output_vf_filetype = IO::VF_FileFormat( output_configuration_filetype );
             // Method parameters
@@ -1146,6 +1148,8 @@ std::unique_ptr<Data::Parameters_Method_MMF> Parameters_Method_MMF_from_Config( 
             config_file_handle.Read_Single( parameters->n_iterations_amortize, "mmf_n_iterations_amortize" );
             config_file_handle.Read_Single( parameters->n_modes, "mmf_n_modes" );
             config_file_handle.Read_Single( parameters->n_mode_follow, "mmf_n_mode_follow" );
+            config_file_handle.Read_Single( parameters->n_GD_iterations, "mmf_n_GD_iterations" );
+            config_file_handle.Read_Single( parameters->n_GD_steps, "mmf_n_GD_steps" );
         }
         catch( ... )
         {

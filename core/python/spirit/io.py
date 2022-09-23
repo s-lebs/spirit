@@ -185,13 +185,12 @@ def chain_append(p_state, filename, fileformat=FILEFORMAT_OVF_TEXT, comment="", 
                  ctypes.c_int(idx_chain))
 
 _Eigenmodes_Read             = _spirit.IO_Eigenmodes_Read
-_Eigenmodes_Read.argtypes    = [ctypes.c_void_p, ctypes.c_char_p, ctypes.c_int, ctypes.c_int,
+_Eigenmodes_Read.argtypes    = [ctypes.c_void_p, ctypes.c_char_p, ctypes.c_int,
                                 ctypes.c_int]
 _Eigenmodes_Read.restype     = None
-def eigenmodes_read(p_state, filename, fileformat=FILEFORMAT_OVF_TEXT, idx_image_inchain=-1, idx_chain=-1):
+def eigenmodes_read(p_state, filename, idx_image_inchain=-1, idx_chain=-1):
     """Read the vector fields from a file as a set of eigenmodes for the spin system."""
-    _Eigenmodes_Read(ctypes.c_void_p(p_state), ctypes.c_char_p(filename.encode('utf-8')),
-                     ctypes.c_int(fileformat), ctypes.c_int(idx_image_inchain),
+    _Eigenmodes_Read(ctypes.c_void_p(p_state), ctypes.c_char_p(filename.encode('utf-8')), ctypes.c_int(idx_image_inchain),
                      ctypes.c_int(idx_chain))
 
 _Eigenmodes_Write             = _spirit.IO_Eigenmodes_Write

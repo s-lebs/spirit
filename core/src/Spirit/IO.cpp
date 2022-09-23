@@ -1020,7 +1020,7 @@ try
 {
     std::shared_ptr<Data::Spin_System> image;
     std::shared_ptr<Data::Spin_System_Chain> chain;
-
+    
     // Fetch correct indices and pointers
     from_indices( state, idx_image_inchain, idx_chain, image, chain );
 
@@ -1185,10 +1185,12 @@ try
 
                 // Determine number of modes
                 int n_modes = 0;
+		std::cout <<image->modes.size()<< std::endl;
+
                 for( int i = 0; i < image->modes.size(); i++ )
                     if( image->modes[i] != nullptr )
                         ++n_modes;
-
+		std::cout <<n_modes<< std::endl;
                 // Open
                 auto file = IO::OVF_File( filename );
 

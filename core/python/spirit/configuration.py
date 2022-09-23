@@ -232,3 +232,21 @@ def set_atom_type(p_state, atom_type=0, pos=[0.0,0.0,0.0], border_rectangular=[-
     _Set_Atom_Type(ctypes.c_void_p(p_state), ctypes.c_int(atom_type), vec3(*pos), vec3(*border_rectangular),
            ctypes.c_float(border_cylindrical), ctypes.c_float(border_spherical),
            ctypes.c_bool(inverted), ctypes.c_int(idx_image), ctypes.c_int(idx_chain))
+    
+    
+    
+_Displace_Eigenmode             = _spirit.Configuration_Displace_Eigenmode
+_Displace_Eigenmode.argtypes    = [ctypes.c_void_p, ctypes.c_int, ctypes.c_int, ctypes.c_int]
+_Displace_Eigenmode.restype     = None
+def displace_eigenmode(p_state, idx_mode, idx_image=-1,idx_chain=-1):
+    """Apply a certain mode to the current configuration"""
+    _Displace_Eigenmode(ctypes.c_void_p(p_state), ctypes.c_int(idx_mode), ctypes.c_int(idx_image), ctypes.c_int(idx_chain))
+
+
+
+
+
+
+
+
+

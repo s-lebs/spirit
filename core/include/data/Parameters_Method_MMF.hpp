@@ -17,6 +17,14 @@ struct Parameters_Method_MMF : public Parameters_Method_Solver
     int n_mode_follow = 0;
     // Number of lowest modes to calculate
     int n_modes = 10;
+    // Number of steps for the Gradient Decent algorithm
+    int n_GD_iterations = 1;
+    // Number of steps of GD between sparse hessian partial steps +1
+    int n_GD_steps = 3162;
+    // Is the Hamiltonian sparse
+    bool sparse = false;     
+    //Save computed eigenmodes in system->modes
+    bool save_modes = true;
 
     // ----------------- Output --------------
     // Energy output settings
@@ -28,6 +36,7 @@ struct Parameters_Method_MMF : public Parameters_Method_Solver
     // Spin configurations output settings
     bool output_configuration_step    = false;
     bool output_configuration_archive = false;
+
 };
 
 } // namespace Data

@@ -7,6 +7,8 @@
 #include <io/OVF_File.hpp>
 #include <utility/Logging.hpp>
 #include <utility/Version.hpp>
+#include <iostream>
+#include <chrono>
 
 #include <cstring>
 
@@ -17,6 +19,7 @@
 
 using Utility::Log_Level;
 using Utility::Log_Sender;
+using namespace std::chrono;
 namespace C = Utility::Constants;
 
 namespace Engine
@@ -41,7 +44,7 @@ Method_MMF<solver>::Method_MMF( std::shared_ptr<Data::Spin_System> system, int i
     // We assume that the systems are not converged before the first iteration
     this->max_torque = system->mmf_parameters->force_convergence + 1.0;
 
-    this->hessian = MatrixX( 3 * this->nos, 3 * this->nos );
+    //this->hessian = MatrixX( 3 * this->nos, 3 * this->nos );
     // Forces
     this->gradient     = vectorfield( this->nos, { 0, 0, 0 } );
     this->minimum_mode = vectorfield( this->nos, { 0, 0, 0 } );
@@ -66,6 +69,16 @@ Method_MMF<solver>::Method_MMF( std::shared_ptr<Data::Spin_System> system, int i
 }
 
 template<Solver solver>
+void Method_MMF<solver>::Calculate_Force_Virtual(
+        const std::vector<std::shared_ptr<vectorfield>> & configurations, const std::vector<vectorfield> & forces,
+        std::vector<vectorfield> & forces_virtual )
+{
+  //this->Calculate_Force(configurations,forces);
+  forces_virtual=forces;
+}
+
+  
+template<Solver solver>
 void Method_MMF<solver>::Calculate_Force(
     const std::vector<std::shared_ptr<vectorfield>> & configurations, std::vector<vectorfield> & forces )
 {
@@ -83,7 +96,7 @@ void Method_MMF<solver>::Calculate_Force(
 }
 
 void check_modes(
-    const vectorfield & image, const vectorfield & gradient, const MatrixX & tangent_basis, const VectorX & eigenvalues,
+    const vectorfield & image, const vectorfield & gradient, const SpMatrixX & tangent_basis, const VectorX & eigenvalues,
     const MatrixX & eigenvectors_2N, const vectorfield & minimum_mode )
 {
     std::size_t nos = image.size();
@@ -159,6 +172,8 @@ void check_modes(
             std::cerr << "   mode norm is too small: " << mode_norm << std::endl;
         if( bad_grad_norm )
             std::cerr << "   gradient norm is too small: " << grad_norm << std::endl;
+        if( bad_grad_tangent_norm )
+            std::cerr << "   gradient_tangent norm is too small: " << grad_tangent_norm << std::endl;
         if( bad_mode_dot_image )
         {
             std::cerr << "   mode NOT TANGENTIAL to SPINS: " << mode_dot_image << std::endl;
@@ -180,6 +195,7 @@ void Method_MMF<solver>::Calculate_Force_Spectra_Matrix(
 {
     auto & image = *configurations[0];
     auto & force = forces[0];
+    
     // auto& force_virtual = forces_virtual[0];
     auto & parameters = *this->systems[0]->mmf_parameters;
 
@@ -200,8 +216,6 @@ void Method_MMF<solver>::Calculate_Force_Spectra_Matrix(
     this->systems[0]->hamiltonian->Gradient( image, gradient );
     Vectormath::set_c_a( 1, gradient, gradient, this->systems[0]->geometry->mask_unpinned );
 
-    // The Hessian (unprojected)
-    this->systems[0]->hamiltonian->Hessian( image, hessian );
 
     Eigen::Ref<VectorX> image_3N    = Eigen::Map<VectorX>( image[0].data(), 3 * nos );
     Eigen::Ref<VectorX> gradient_3N = Eigen::Map<VectorX>( gradient[0].data(), 3 * nos );
@@ -210,15 +224,126 @@ void Method_MMF<solver>::Calculate_Force_Spectra_Matrix(
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     // Get the eigenspectrum
-    MatrixX hessian_final = MatrixX::Zero( 2 * nos, 2 * nos );
-    MatrixX basis_3Nx2N   = MatrixX::Zero( 3 * nos, 2 * nos );
+    SpMatrixX basis_3Nx2N   = SpMatrixX( 3 * nos, 2 * nos );
+
     VectorX eigenvalues;
     MatrixX eigenvectors;
-    bool successful = Eigenmodes::Hessian_Partial_Spectrum(
-        this->parameters, image, gradient, hessian, n_modes, basis_3Nx2N, hessian_final, eigenvalues, eigenvectors );
+    MatrixX prev_ev=MatrixX(2*nos,n_modes);
+
+    bool sparse = system->mmf_parameters->sparse;
+    bool save_modes = system->mmf_parameters->save_modes;
+    bool successful;
+    //int GDsteps = system->mmf_parameters->n_GD_steps;
+    int GDIterations=system->mmf_parameters->n_GD_iterations;
+    
+    if( sparse )
+    {
+        // The Hessian (unprojected)  
+        SpMatrixX hessian( 3 * nos, 3 * nos );
+        system->hamiltonian->Sparse_Hessian( image, hessian );
+
+        // Get the eigenspectrum
+        
+        SpMatrixX hessian_constrained = SpMatrixX( 2 * nos, 2 * nos );
+
+        high_resolution_clock::time_point t1 = high_resolution_clock::now();
+
+
+        //std::cout <<(*((system->modes2N)[0]))<< std::endl;
+        //std::cout <<(*((system->modes2N)[0])).size()<< std::endl;
+
+        if(true)//iterations==0)//%GDsteps=
+        {
+            for(int i=0;i< n_modes; i++ )
+            {
+                for( int j = 0; j < nos; j++ )
+                {
+                    (prev_ev.col(i))[2*j]=((*system->modes2N[i])[j])[0];
+                    (prev_ev.col(i))[2*j+1]=((*system->modes2N[i] )[j])[1];
+                    //*image->modes2N[idx_mode] )[0].data()
+                    
+                    //std::cout <<(*system->modes2N[i] )[0].data()<< std::endl;
+
+                }
+            }
+            successful = Eigenmodes::computeLowEV(this->parameters, image, gradient, hessian, n_modes, basis_3Nx2N, hessian_constrained,eigenvalues, eigenvectors, prev_ev, GDIterations);
+        }
+        else
+        {
+            successful = Eigenmodes::Sparse_Hessian_Partial_Spectrum(this->parameters, image, gradient, hessian, n_modes, basis_3Nx2N, hessian_constrained,eigenvalues, eigenvectors );
+        }
+
+        high_resolution_clock::time_point t2 = high_resolution_clock::now();
+        duration<double> time_span = duration_cast<duration<double>>(t2 - t1); 
+        std::cout <<iterations<<" "<<time_span.count()<< std::endl;
+        //std::cout <<GDsteps<< GDIterations<< std::endl;
+    }
+    else
+    {
+        // The Hessian (unprojected)
+        MatrixX hessian( 3 * nos, 3 * nos );
+        system->hamiltonian->Hessian( image, hessian );
+        // Get the eigenspectrum
+        MatrixX hessian_constrained = MatrixX::Zero( 2 * nos, 2 * nos );
+        MatrixX _basis_3Nx2N      = MatrixX( basis_3Nx2N );
+
+        successful = Eigenmodes::Hessian_Partial_Spectrum(
+            this->parameters, image, gradient, hessian, n_modes, _basis_3Nx2N, hessian_constrained,
+            eigenvalues, eigenvectors );
+
+        basis_3Nx2N = _basis_3Nx2N.sparseView();
+        //std::cout <<"dense MMF matrix"<< std::endl;
+	}
+    
+    //std::cout <<"printing eigenvalues:"<< std::endl;
+
+
+/*
+    for (int i=0; i< eigenvalues.size();i++)
+      {
+          eigenvectors.col(i).normalize();
+          if(iterations!=0)
+          {
+      	    std::cout <<"ev"<<i+1<<" "<< eigenvalues(i) << " "<<eigenvalues2(i)<<" "<<abs((eigenvalues2(i)-eigenvalues(i)))<< std::endl;
+          }
+          /*
+          else
+          {
+            std::cout <<"ev"<<i+1<<" "<< eigenvalues(i)<<  std::endl;
+          }
+      }
+*/
+
+     iterations++;
+/*
+    
+    //std::cout <<eigenvectors << std::endl;
+
+    //std::cout <<eigenvectors2 << std::endl;
+    
+
+    std::cout <<successful << std::endl;
+*/
+
+    //prev_ev=eigenvectors;
 
     if( successful )
     {
+        // get every mode and save it to system->modes
+        for( int i = 0; i < n_modes; i++ )
+        {
+            
+            
+            // dynamically allocate the system->modes
+            system->modes2N[i] = std::shared_ptr<vectorfield>( new vectorfield( nos, Vector3{ 1, 0,0} ) );
+            // Set the modes
+            for( int j = 0; j < nos; j++ )
+                ( *system->modes2N[i] )[j] = { eigenvectors.col(i)[2 * j], eigenvectors.col(i)[2 * j + 1],0};
+            // get the eigenvalues
+            system->eigenvalues[i] = eigenvalues( i );
+        }
+        
+    
         // TODO: if the mode that is followed in the positive region is not no. 0,
         //       the following won't work!!
         //       Need to save the mode_follow as a local variable and update it as necessary.
@@ -269,7 +394,7 @@ void Method_MMF<solver>::Calculate_Force_Spectra_Matrix(
             mode_follow_previous = mode_follow;
             mode_2N_previous     = eigenvectors.col( mode_follow );
         }
-
+	
         // Ref to correct mode
         Eigen::Ref<VectorX> mode_2N = eigenvectors.col( mode_follow );
         scalar mode_evalue          = eigenvalues[mode_follow];
@@ -282,14 +407,14 @@ void Method_MMF<solver>::Calculate_Force_Spectra_Matrix(
         // Get the scalar product of mode and gradient
         scalar mode_grad = mode_3N.dot( gradient_3N );
         // Get the angle between mode and gradient (in the tangent plane!)
-        VectorX graient_tangent_3N = gradient_3N - gradient_3N.dot( image_3N ) * image_3N;
+        //VectorX gradient_tangent_3N = gradient_3N - gradient_3N.dot( image_3N ) * image_3N;
         scalar mode_grad_angle     = std::abs( mode_grad / ( mode_3N.norm() * gradient_3N.norm() ) );
 
         // Make sure there is nothing wrong
         check_modes( image, gradient, basis_3Nx2N, eigenvalues, eigenvectors, minimum_mode );
 
         Manifoldmath::project_tangential( gradient, image );
-
+	
         // Some debugging prints
         if( mode_evalue < -1e-6 && mode_grad_angle > 1e-8 ) // -1e-6)// || switched2)
         {
@@ -316,6 +441,7 @@ void Method_MMF<solver>::Calculate_Force_Spectra_Matrix(
                     eigenvalues.transpose(), mode_follow,
                     std::acos( std::min( mode_grad_angle, scalar( 1.0 ) ) ) * 180.0 / C::Pi, std::abs( mode_grad ) )
                           << std::endl;
+                //std::cout <<"angle "<<mode_grad_angle << std::endl;
             }
             else
             {
@@ -325,8 +451,8 @@ void Method_MMF<solver>::Calculate_Force_Spectra_Matrix(
                     std::acos( std::min( mode_grad_angle, scalar( 1.0 ) ) ) * 180.0 / C::Pi, std::abs( mode_grad ) )
                           << std::endl;
             }
-        }
-
+	    }
+	
         // TODO: parameter whether to *always* follow the minimum mode
         if( false )
         {
@@ -378,8 +504,8 @@ void Method_MMF<solver>::Calculate_Force_Spectra_Matrix(
                     // Copy out the forces
                     Vectormath::set_c_a( 1, gradient, force, this->systems[0]->geometry->mask_unpinned );
                 }
-            }
-        }
+	        }
+	    }
     }
     else
     {
@@ -387,7 +513,7 @@ void Method_MMF<solver>::Calculate_Force_Spectra_Matrix(
         Log( Log_Level::Error, Log_Sender::MMF, "Failed to calculate eigenvectors of the Hessian!" );
         Log( Log_Level::Info, Log_Sender::MMF, "Zeroing the MMF force..." );
         Vectormath::fill( force, Vector3{ 0, 0, 0 } );
-    }
+	}
 }
 
 void printmatrix( MatrixX & m )

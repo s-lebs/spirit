@@ -22,10 +22,14 @@ public:
     // Method name as string
     std::string Name() override;
 
-private:
-    // Calculate Forces onto Systems
+    void Calculate_Force_Virtual(
+        const std::vector<std::shared_ptr<vectorfield>> & configurations, const std::vector<vectorfield> & forces,
+        std::vector<vectorfield> & forces_virtual ) override;
+            // Calculate Forces onto Systems
     void Calculate_Force(
         const std::vector<std::shared_ptr<vectorfield>> & configurations, std::vector<vectorfield> & forces ) override;
+
+private:
 
     // Check if the Forces are converged
     bool Converged() override;
@@ -45,13 +49,15 @@ private:
     bool switched1, switched2;
 
     // Last calculated hessian
-    MatrixX hessian;
+    //MatrixX hessian;
     // Last calculated gradient
     vectorfield gradient;
     // Last calculated minimum mode
     vectorfield minimum_mode;
     int mode_follow_previous;
     VectorX mode_2N_previous;
+    //MatrixX prev_ev;
+    int iterations = 0;
 
     // Last iterations spins and reaction coordinate
     scalar Rx_last;

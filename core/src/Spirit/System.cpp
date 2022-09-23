@@ -100,6 +100,39 @@ catch( ... )
     return nullptr;
 }
 
+scalar * System_Get_2NEigenmode( State * state, int idx_mode, int idx_image, int idx_chain ) noexcept
+try
+{
+    std::shared_ptr<Data::Spin_System> image;
+    std::shared_ptr<Data::Spin_System_Chain> chain;
+
+    // Fetch correct indices and pointers
+    from_indices( state, idx_image, idx_chain, image, chain );
+
+    // Check mode index
+    if( idx_mode >= image->modes2N.size() )
+    {
+        Log( Utility::Log_Level::Error, Utility::Log_Sender::API,
+             fmt::format( "Invalid mode index {}, image has only {} modes stored.", idx_mode, image->modes2N.size() ) );
+        return nullptr;
+    }
+
+    // Check if mode has been calculated
+    if( !image->modes2N[idx_mode] )
+    {
+        Log( Utility::Log_Level::Error, Utility::Log_Sender::API,
+             fmt::format( "Mode {} has not yet been calculated.", idx_mode ) );
+        return nullptr;
+    }
+
+    return ( *image->modes2N[idx_mode] )[0].data();
+}
+catch( ... )
+{
+    spirit_handle_exception_api( idx_image, idx_chain );
+    return nullptr;
+}
+
 float System_Get_Rx( State * state, int idx_image, int idx_chain ) noexcept
 try
 {
@@ -290,6 +323,27 @@ try
 
     image->Lock();
     Engine::Eigenmodes::Calculate_Eigenmodes( image, idx_image, idx_chain );
+    image->Unlock();
+}
+catch( ... )
+{
+    spirit_handle_exception_api( idx_image, idx_chain );
+}
+
+
+// Calculate the eigenmodes of the System
+void System_Transfer_Eigenmodes( State * state, int idx_image, int idx_chain ) noexcept
+try
+{
+    // Fetch correct indices and pointers for image and chain
+    std::shared_ptr<Data::Spin_System> image;
+    std::shared_ptr<Data::Spin_System_Chain> chain;
+
+    // Fetch correct indices and pointers
+    from_indices( state, idx_image, idx_chain, image, chain );
+
+    image->Lock();
+    Engine::Eigenmodes::Transfer_Eigenmodes( image, idx_image, idx_chain );
     image->Unlock();
 }
 catch( ... )

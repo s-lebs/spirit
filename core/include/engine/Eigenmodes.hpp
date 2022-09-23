@@ -43,7 +43,13 @@ bool Sparse_Hessian_Partial_Spectrum(
     const SpMatrixX & hessian, int n_modes, SpMatrixX & tangent_basis, SpMatrixX & hessian_constrained, VectorX & eigenvalues,
     MatrixX & eigenvectors
 );
+// Calculate a partial eigenspectrum of the sparse Hessian with Gradient Decent
+bool computeLowEV(const std::shared_ptr<Data::Parameters_Method> parameters, const vectorfield & spins, const vectorfield & gradient,
+    const SpMatrixX & hessian, int n_modes, SpMatrixX & tangent_basis, SpMatrixX & hessian_constrained,
+    VectorX & eigenvalues, MatrixX & eigenvectors, MatrixX & prev, int GDIterations);
 
+//Transfer the 2N eigenvectors into the 3N eigenvectors
+void Transfer_Eigenmodes( std::shared_ptr<Data::Spin_System> system, int idx_img, int idx_chain );
 } // end namespace Eigenmodes
 } // end namespace Engine
 

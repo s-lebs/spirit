@@ -39,7 +39,7 @@ void Sparse_Get_Lowest_Eigenvectors( const SpMatrixX & matrix, scalar max_evalue
     Log( Utility::Log_Level::All, Utility::Log_Sender::HTST, "    Using Spectra to compute lowest eigenmodes..." );
 
     int nos     = matrix.rows() / 2;
-    int n_modes = 6; // Number of lowest modes to be computed (should always be enough)
+    int n_modes = 3; // Number of lowest modes to be computed (should always be enough)
 
     int ncv      = std::min(2*nos, std::max(2*n_modes + 1, 20)); // This is the default value used by scipy.sparse
     int max_iter = 20*nos;
