@@ -513,6 +513,9 @@ void sparse_hessian_bordered_3N(
     for( int i = 0; i < nos; ++i )
         lambda[i] = image[i].normalized().dot( gradient[i] );
 
+    
+    //std::cout <<lambda<<std::endl;
+
     // Construct hessian_out
     typedef Eigen::Triplet<scalar> T;
     std::vector<T> tripletList;

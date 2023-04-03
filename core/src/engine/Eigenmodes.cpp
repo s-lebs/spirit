@@ -14,6 +14,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <math.h>
 
 using Utility::Log_Level;
 using Utility::Log_Sender;
@@ -92,18 +93,22 @@ void Calculate_Eigenmodes( std::shared_ptr<Data::Spin_System> system, int idx_im
         // The Hessian (unprojected)
         SpMatrixX hessian( 3 * nos, 3 * nos );
         system->hamiltonian->Sparse_Hessian( spins_initial, hessian );
+        //std::cout <<hessian<<std::endl;
         // Get the eigenspectrum
         SpMatrixX hessian_constrained = SpMatrixX( 2 * nos, 2 * nos );
 
         successful = Eigenmodes::Sparse_Hessian_Partial_Spectrum(
             system->ema_parameters, spins_initial, gradient, hessian, n_modes, tangent_basis, hessian_constrained,
             eigenvalues, eigenvectors );
+        //std::cout <<tangent_basis<<std::endl;
+        //std::cout <<hessian_constrained<<std::endl;
     }
     else
     {
         // The Hessian (unprojected)
         MatrixX hessian( 3 * nos, 3 * nos );
         system->hamiltonian->Hessian( spins_initial, hessian );
+        std::cout <<hessian<<std::endl;
         // Get the eigenspectrum
         MatrixX hessian_constrained = MatrixX::Zero( 2 * nos, 2 * nos );
         MatrixX _tangent_basis      = MatrixX( tangent_basis );
@@ -111,9 +116,12 @@ void Calculate_Eigenmodes( std::shared_ptr<Data::Spin_System> system, int idx_im
         successful = Eigenmodes::Hessian_Partial_Spectrum(
             system->ema_parameters, spins_initial, gradient, hessian, n_modes, _tangent_basis, hessian_constrained,
             eigenvalues, eigenvectors );
-
+        //std::cout <<hessian_constrained<<std::endl;
         tangent_basis = _tangent_basis.sparseView();
+        //std::cout <<tangent_basis<<std::endl;
     }
+
+    
 
     if( successful )
     {
@@ -293,7 +301,9 @@ bool Sparse_Hessian_Partial_Spectrum(
     return ( hessian_spectrum.info() == Spectra::SUCCESSFUL ) && ( nconv > 0 );
 }
 
-
+/*
+ Calculate the lowest n_modes using Gradient Decent
+*/
 bool computeLowEV(const std::shared_ptr<Data::Parameters_Method> parameters, const vectorfield & spins, const vectorfield & gradient,
     const SpMatrixX & hessian, int n_modes, SpMatrixX & tangent_basis, SpMatrixX & hessian_constrained,
     VectorX & eigenvalues, MatrixX & eigenvectors, MatrixX & prev, int GDIterations)
@@ -318,8 +328,10 @@ bool computeLowEV(const std::shared_ptr<Data::Parameters_Method> parameters, con
     int dimM = matrix.rows();
     double R;
     bool successful=1;
-    int nit = 100000;
+    int nit = 10000000;
     int l=0;
+    double maxev;
+    double step;
     
 
     VectorX Vec(dimM);
@@ -327,6 +339,56 @@ bool computeLowEV(const std::shared_ptr<Data::Parameters_Method> parameters, con
     VectorX MatV(dimM);
     VectorX gradR;
 
+    // get the biggest eigenvalue
+    maxev=15;
+    
+    for(int i=0;i<=dimM;i++)
+    {
+        Vec(i)=rand()%100;
+    }
+
+    Vec.normalize();
+
+    for(int s=0; s<500;s++)
+    {
+        MatV=matrix*Vec;
+
+        R=Vec.transpose()*MatV;//*1/(Vec.norm()*Vec.norm())
+        /*
+        if(s%1000==0)
+            {
+                std::cout <<s<<": maxev="<<R<<"; gradient: "<<gradR.norm()<<std::endl;
+
+            }
+        */
+        gradR=MatV-R*Vec;
+            
+        if(gradR.norm()<5e-7 || s==GDIterations/100)
+        {
+            maxev=R;
+            //std::cout <<s<<": maxev="<<R<<std::endl;
+            break;
+        }
+        if(10000<gradR.norm()&& 100<s)
+        {
+            std::cout <<"gradient diverged after "<<s<<" steps"<<std::endl;   
+            successful=0;
+            break;
+        }
+
+        if(true)//s<100)
+        {
+            step=0.01;
+        }
+        else
+        {
+            step=1.0/double(s);
+        }
+
+        Vec=Vec+step*gradR;
+        Vec.normalize();
+    }
+    
 
     if(prev.size()==0)
     {
@@ -350,6 +412,8 @@ bool computeLowEV(const std::shared_ptr<Data::Parameters_Method> parameters, con
 	        Vec=prev.col(n-1);
 	    }
 
+        Vec.normalize();
+
         for(int s=0; s<nit;s++)
         {
             for(int m=0;m<n;m+=1)
@@ -360,16 +424,21 @@ bool computeLowEV(const std::shared_ptr<Data::Parameters_Method> parameters, con
                 }
                 else
                 {
-                    MatV+=5*eigenvectors.col(m-1).dot(Vec)*eigenvectors.col(m-1);
+                    MatV+=(0.99*abs(maxev-eigenvalues(m-1)))*eigenvectors.col(m-1).dot(Vec)*eigenvectors.col(m-1);
                 }
             }
 
-            R=1/(Vec.norm()*Vec.norm())*Vec.transpose()*MatV;
+            R=Vec.transpose()*MatV;//*1/(Vec.norm()*Vec.norm())
 
             gradR=MatV-R*Vec;
+
+            //if(s%10000==0)
+            //{
+            //    std::cout <<"eigenvalue " << n<<" "<<R<<" "<<gradR.norm()<<std::endl;
+            //}
             
             
-            if(gradR.norm()<5e-12 || s==GDIterations)
+            if(gradR.norm()<5e-7 || s==GDIterations)
             {
                 eigenvalues.conservativeResize(eigenvalues.size()+1);
                 eigenvalues(n-1)=R;
@@ -385,8 +454,15 @@ bool computeLowEV(const std::shared_ptr<Data::Parameters_Method> parameters, con
                 successful=0;
                 break;
 	        }
+
+            step=1.0/(100.0*ceil((s+1)/10000.0));
+
+            //if(s%10000==0)
+            //{
+            //    std::cout <<step<<std::endl;
+            //}
  
-            Vec=Vec-0.02*gradR;
+            Vec=Vec-step*gradR;
 
             Vec.normalize();
             
@@ -458,6 +534,112 @@ void Transfer_Eigenmodes( std::shared_ptr<Data::Spin_System> system, int idx_img
         for( int j = 0; j < nos; j++ )
             ( *system->modes[i] )[j] = { evec_3N[3 * j], evec_3N[3 * j + 1], evec_3N[3 * j + 2] };
 
+    }
+}
+
+void Flip_Eigenmode(std::shared_ptr<Data::Spin_System> system,int idx_mode, int idx_img, int idx_chain)
+{
+    int nos = system->nos;
+
+    for( int j = 0; j < nos; j++ )
+    {
+            ( *system->modes[idx_mode] )[j] = -( *system->modes[idx_mode] )[j] ;
+    }
+}
+
+void Calculate_EigenmodesGD( std::shared_ptr<Data::Spin_System> system, int idx_img, int idx_chain, int GD_it)
+{
+    std::cout <<"nos: "<<system->nos<<std::endl;
+    int nos = system->nos;
+
+    std::cout <<"nos: "<<nos<<std::endl;
+
+    //Check_Eigenmode_Parameters( system );
+    std::cout <<"n_modes: "<<system->ema_parameters->n_modes<<std::endl;
+    auto & n_modes = system->ema_parameters->n_modes;
+    std::cout <<"n_modes: "<<n_modes<<std::endl;
+
+    std::cout <<"spins: "<<(*system->spins)[0]<<std::endl;
+    
+    // vectorfield mode(nos, Vector3{1, 0, 0});
+    vectorfield spins_initial = *system->spins;
+    //std::cout <<"spins: "<<spins_initial<<std::endl;
+
+
+
+    Log( Log_Level::Info, Log_Sender::EMA, fmt::format( "Started calculation of {} Eigenmodes ", n_modes ), idx_img,
+         idx_chain );
+
+    // Calculate the Eigenmodes
+    vectorfield gradient( nos );
+        // The gradient (unprojected)
+    system->hamiltonian->Gradient( spins_initial, gradient );
+    auto mask = system->geometry->mask_unpinned.data();
+    auto g    = gradient.data();
+    // Backend::par::apply(gradient.size(), [g, mask] SPIRIT_LAMBDA (int idx) {
+    //     g[idx] = mask[idx]*g[idx];
+    // });
+     Vectormath::set_c_a( 1, gradient, gradient, system->geometry->mask_unpinned );
+
+    VectorX eigenvalues;
+    MatrixX eigenvectors;
+    SpMatrixX tangent_basis = SpMatrixX( 3 * nos, 2 * nos );
+    bool sparse = true;//system->ema_parameters->sparse;
+    bool successful;
+    // The Hessian (unprojected)
+    SpMatrixX hessian( 3 * nos, 3 * nos );
+    system->hamiltonian->Sparse_Hessian( spins_initial, hessian );
+    // Get the eigenspectrum
+    MatrixX prev_ev=MatrixX(2*nos,n_modes);
+    for(int i=0;i< n_modes; i++ )
+    {
+        for( int j = 0; j < nos; j++ )
+        {
+            (prev_ev.col(i))[2*j]=((*system->modes2N[i])[j])[0];
+            (prev_ev.col(i))[2*j+1]=((*system->modes2N[i] )[j])[1];
+            //*image->modes2N[idx_mode] )[0].data()
+            //std::cout <<(*system->modes2N[i] )[0].data()<< std::endl;
+        }
+    }
+    SpMatrixX hessian_constrained = SpMatrixX( 2 * nos, 2 * nos );
+    successful = Eigenmodes::computeLowEV(system->ema_parameters, spins_initial, gradient, hessian, n_modes, tangent_basis, hessian_constrained,eigenvalues, eigenvectors, prev_ev, GD_it);
+    if( successful )
+    {
+        // get every mode and save it to system->modes
+        for( int i = 0; i < n_modes; i++ )
+        {
+            // Extract the minimum mode (transform evec_lowest_2N back to 3N)
+            VectorX evec_3N = tangent_basis * eigenvectors.col( i );
+
+            // dynamically allocate the system->modes
+            system->modes[i] = std::shared_ptr<vectorfield>( new vectorfield( nos, Vector3{ 1, 0, 0 } ) );
+
+            // Set the modes
+            for( int j = 0; j < nos; j++ )
+                ( *system->modes[i] )[j] = { evec_3N[3 * j], evec_3N[3 * j + 1], evec_3N[3 * j + 2] };
+
+            // dynamically allocate the system->modes
+            system->modes2N[i] = std::shared_ptr<vectorfield>( new vectorfield( nos, Vector3{ 1, 0,0} ) );
+            // Set the modes
+            for( int j = 0; j < nos; j++ )
+                ( *system->modes2N[i] )[j] = { eigenvectors.col(i)[2 * j], eigenvectors.col(i)[2 * j + 1],0};
+
+            // get the eigenvalues
+            system->eigenvalues[i] = eigenvalues( i );
+        }
+
+        Log( Log_Level::Info, Log_Sender::All, fmt::format( "Finished calculation of {} Eigenmodes ", n_modes ),
+             idx_img, idx_chain );
+
+        int ev_print = std::min( n_modes, 100 );
+        Log( Log_Level::Info, Log_Sender::EMA,
+             fmt::format( "Eigenvalues: {}", eigenvalues.head( ev_print ).transpose() ), idx_img, idx_chain );
+    }
+    else
+    {
+        //// TODO: What to do then?
+        Log( Log_Level::Warning, Log_Sender::All, "Something went wrong in eigenmode calculation...", idx_img,
+             idx_chain );
     }
 }
 

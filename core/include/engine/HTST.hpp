@@ -26,14 +26,21 @@ void Calculate_Dynamical_Matrix(
     const vectorfield & spins, const scalarfield & mu_s, const MatrixX & hessian, MatrixX & velocity );
 
 // Calculate the zero volume of a spin system
-scalar Calculate_Zero_Volume( const std::shared_ptr<Data::Spin_System> system );
+scalar Calculate_Zero_Volume( const std::shared_ptr<Data::Spin_System> system , VectorX eigenvalues, MatrixX eigenvectors,scalar epsilon, int n_modes, bool* rot);
+
+// Update the zero volume with the volume of the rotational mode
+scalar UpdateZMV(State * state, int idx_image_minimum, int idx_image_sp, int idx_chain, char type);
+
+// Compute the prefactor and print all results
+void End_HTST( Data::HTST_Info & htst_info);
 
 // Generates the geodesic Hessian in 2N-representation and calculates it's eigenvalues and eigenvectors
 void Geodesic_Eigen_Decomposition(
     const vectorfield & image, const vectorfield & gradient, const MatrixX & hessian, MatrixX & hessian_geodesic_3N,
     MatrixX & hessian_geodesic_2N, VectorX & eigenvalues, MatrixX & eigenvectors );
 
-scalar Calculate_Zero_Volume( const std::shared_ptr<Data::Spin_System> system );
+
+
 
 } // namespace HTST
 } // namespace Engine

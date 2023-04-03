@@ -16,15 +16,17 @@ struct Parameters_Method_MMF : public Parameters_Method_Solver
     // Which mode to follow (based on some conditions)
     int n_mode_follow = 0;
     // Number of lowest modes to calculate
-    int n_modes = 10;
+    int n_modes = 5;
     // Number of steps for the Gradient Decent algorithm
-    int n_GD_iterations = 1;
+    int n_GD_iterations = 10;
     // Number of steps of GD between sparse hessian partial steps +1
     int n_GD_steps = 3162;
     // Is the Hamiltonian sparse
     bool sparse = false;     
     //Save computed eigenmodes in system->modes
     bool save_modes = true;
+    // Is the state rotational symmetric
+    bool rot_sym = true;
 
     // ----------------- Output --------------
     // Energy output settings

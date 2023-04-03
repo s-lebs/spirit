@@ -51,6 +51,8 @@ inline void saveField( std::string fname, const Field_Like & field )
 // Note the two images should correspond to one minimum and one saddle point
 void Calculate( Data::HTST_Info & htst_info );
 
+void End_HTST( Data::HTST_Info & htst_info);
+
 // Calculate the sparse Velocity matrix
 void Sparse_Calculate_Dynamical_Matrix(
     const vectorfield & spins, const scalarfield & mu_s, const SpMatrixX & hessian, SpMatrixX & velocity );

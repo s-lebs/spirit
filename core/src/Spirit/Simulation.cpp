@@ -374,6 +374,8 @@ try
             method = std::shared_ptr<Engine::Method>( new Engine::Method_MMF<Engine::Solver::LBFGS_OSO>( image, idx_chain ) );
         else if( solver_type == int( Engine::Solver::LBFGS_Atlas ) )
             method = std::shared_ptr<Engine::Method>( new Engine::Method_MMF<Engine::Solver::LBFGS_Atlas>( image, idx_chain ) );
+        else if( solver_type == int( Engine::Solver::VP_OSO ) )
+            method = std::shared_ptr<Engine::Method>( new Engine::Method_MMF<Engine::Solver::VP_OSO>( image, idx_chain ) );
         else
             spirit_throw(
                 Utility::Exception_Classifier::Unknown_Exception, Utility::Log_Level::Warning,

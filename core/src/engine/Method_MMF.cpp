@@ -216,7 +216,7 @@ void Method_MMF<solver>::Calculate_Force_Spectra_Matrix(
     this->systems[0]->hamiltonian->Gradient( image, gradient );
     Vectormath::set_c_a( 1, gradient, gradient, this->systems[0]->geometry->mask_unpinned );
 
-
+    
     Eigen::Ref<VectorX> image_3N    = Eigen::Map<VectorX>( image[0].data(), 3 * nos );
     Eigen::Ref<VectorX> gradient_3N = Eigen::Map<VectorX>( gradient[0].data(), 3 * nos );
 
@@ -235,6 +235,7 @@ void Method_MMF<solver>::Calculate_Force_Spectra_Matrix(
     bool successful;
     //int GDsteps = system->mmf_parameters->n_GD_steps;
     int GDIterations=system->mmf_parameters->n_GD_iterations;
+    //std::cout <<GDIterations<< std::endl;
     
     if( sparse )
     {
@@ -246,9 +247,9 @@ void Method_MMF<solver>::Calculate_Force_Spectra_Matrix(
         
         SpMatrixX hessian_constrained = SpMatrixX( 2 * nos, 2 * nos );
 
-        high_resolution_clock::time_point t1 = high_resolution_clock::now();
+        //high_resolution_clock::time_point t1 = high_resolution_clock::now();
 
-
+        
         //std::cout <<(*((system->modes2N)[0]))<< std::endl;
         //std::cout <<(*((system->modes2N)[0])).size()<< std::endl;
 
@@ -266,16 +267,17 @@ void Method_MMF<solver>::Calculate_Force_Spectra_Matrix(
 
                 }
             }
+            
             successful = Eigenmodes::computeLowEV(this->parameters, image, gradient, hessian, n_modes, basis_3Nx2N, hessian_constrained,eigenvalues, eigenvectors, prev_ev, GDIterations);
         }
         else
         {
             successful = Eigenmodes::Sparse_Hessian_Partial_Spectrum(this->parameters, image, gradient, hessian, n_modes, basis_3Nx2N, hessian_constrained,eigenvalues, eigenvectors );
         }
-
-        high_resolution_clock::time_point t2 = high_resolution_clock::now();
-        duration<double> time_span = duration_cast<duration<double>>(t2 - t1); 
-        std::cout <<iterations<<" "<<time_span.count()<< std::endl;
+        //std::cout <<eigenvalues<< std::endl;
+        //high_resolution_clock::time_point t2 = high_resolution_clock::now();
+        //duration<double> time_span = duration_cast<duration<double>>(t2 - t1); 
+        //std::cout <<iterations<<" "<<time_span.count()<< std::endl;
         //std::cout <<GDsteps<< GDIterations<< std::endl;
     }
     else
@@ -357,7 +359,7 @@ void Method_MMF<solver>::Calculate_Force_Spectra_Matrix(
         if( eigenvalues[0] > -1e-6 )
             mode_follow = mode_positive;
 
-        if( true ) // && eigenvalues[0] > -1e-6)
+        if(true)//false)//( eigenvalues[0] > -1e-6)
         {
             // Determine if we are still following the same mode and correct if not
             // std::abs(mode_2N_previous.dot(eigenvectors.col(mode_follow))) < 1e-2
@@ -369,8 +371,7 @@ void Method_MMF<solver>::Calculate_Force_Spectra_Matrix(
                 if( mode_dot_mode < 0.99 )
                 {
                     // Need to look for our mode
-                    std::cerr << fmt::format(
-                        "Looking for previous mode, which used to be {}...", mode_follow_previous );
+                    //std::cerr << fmt::format("Looking for previous mode, which used to be {}...", mode_follow_previous );
                     // int ntest = 6;
                     // int start = std::max(0, mode_follow_previous-ntest);
                     // int stop  = std::min(n_modes, mode_follow_previous+ntest);
@@ -383,10 +384,11 @@ void Method_MMF<solver>::Calculate_Force_Spectra_Matrix(
                             mode_dot_mode = m_dot_m_test;
                         }
                     }
+                    /*
                     if( mode_follow != mode_follow_previous )
                         std::cerr << fmt::format( "Found mode no. {}", mode_follow ) << std::endl;
                     else
-                        std::cerr << "Did not find a new mode..." << std::endl;
+                        std::cerr << "Did not find a new mode..." << std::endl;*/
                 }
             }
 
@@ -411,10 +413,10 @@ void Method_MMF<solver>::Calculate_Force_Spectra_Matrix(
         scalar mode_grad_angle     = std::abs( mode_grad / ( mode_3N.norm() * gradient_3N.norm() ) );
 
         // Make sure there is nothing wrong
-        check_modes( image, gradient, basis_3Nx2N, eigenvalues, eigenvectors, minimum_mode );
+        //check_modes( image, gradient, basis_3Nx2N, eigenvalues, eigenvectors, minimum_mode );
 
         Manifoldmath::project_tangential( gradient, image );
-	
+        /*
         // Some debugging prints
         if( mode_evalue < -1e-6 && mode_grad_angle > 1e-8 ) // -1e-6)// || switched2)
         {
@@ -451,24 +453,41 @@ void Method_MMF<solver>::Calculate_Force_Spectra_Matrix(
                     std::acos( std::min( mode_grad_angle, scalar( 1.0 ) ) ) * 180.0 / C::Pi, std::abs( mode_grad ) )
                           << std::endl;
             }
-	    }
-	
+	    }*/
+        bool rot_sym=system->mmf_parameters->sparse;
         // TODO: parameter whether to *always* follow the minimum mode
         if( false )
-        {
-            // Invert the gradient force along the minimum mode
-            Manifoldmath::invert_parallel( gradient, minimum_mode );
-
+        {   
+            // Find out wether the object is rotational symmetric
+            if(rot_sym)
+            {
+                // Invert the gradient force along the minimum mode
+                Manifoldmath::invert_parallel( gradient, minimum_mode );
+            }
+            else
+            {
+                // project the gradient force orthogonal to the minimum mode
+                Manifoldmath::project_orthogonal(gradient,minimum_mode);
+            }
             // Copy out the forces
             Vectormath::set_c_a( -1, gradient, force, this->systems[0]->geometry->mask_unpinned );
         }
         else
         {
-            if( eigenvalues[0] < -1e-6 && mode_grad_angle > 1e-8 ) // -1e-6)// || switched2)
+            if( mode_evalue < -1e-6 && mode_grad_angle > 1e-8 ) // -1e-6)// || switched2)//eigenvalues[0]
             {
-                // Invert the gradient force along the minimum mode
-                Manifoldmath::invert_parallel( gradient, minimum_mode );
-
+                // Find out wether the object is rotational symmetric
+                if(rot_sym)
+                {
+                    // Invert the gradient force along the minimum mode
+                    Manifoldmath::invert_parallel( gradient, minimum_mode );
+                }
+                else
+                {
+                    // project the gradient force orthogonal to the minimum mode
+                    Manifoldmath::project_orthogonal(gradient,minimum_mode);
+                }
+                //std::cout <<"ev negativ & nicht orthogonal "<<eigenvalues[0]<<" "<<mode_follow<<" "<<mode_evalue<< std::endl;
                 // Copy out the forces
                 Vectormath::set_c_a( -1, gradient, force, this->systems[0]->geometry->mask_unpinned );
             }
@@ -485,22 +504,33 @@ void Method_MMF<solver>::Calculate_Force_Spectra_Matrix(
                 }
                 else
                 {
+                    //std::cout <<"ev null oder positiv & nicht orthogonal "<<eigenvalues[0]<<" "<<mode_follow<<" "<<mode_evalue<< std::endl;
                     // Copy out the forces
                     Vectormath::set_c_a( 1, gradient, force, this->systems[0]->geometry->mask_unpinned );
                 }
             }
             else
             {
-                if( std::abs( mode_evalue ) > 1e-8 )
+                if( std::abs( mode_evalue ) > 1e-6 )
                 {
-                    // Invert the gradient force along the minimum mode
-                    Manifoldmath::invert_parallel( gradient, minimum_mode );
-
+                    // Find out wether the object is rotational symmetric
+                    if(rot_sym)
+                    {
+                       // Invert the gradient force along the minimum mode
+                        Manifoldmath::invert_parallel( gradient, minimum_mode );
+                    }
+                    else
+                    {
+                        // project the gradient force orthogonal to the minimum mode
+                        Manifoldmath::project_orthogonal(gradient,minimum_mode);
+                    }
+                    //std::cout <<"ev nicht null & orthogonal "<<eigenvalues[0]<<" "<<mode_follow<<" "<<mode_evalue<< std::endl;
                     // Copy out the forces
                     Vectormath::set_c_a( -1, gradient, force, this->systems[0]->geometry->mask_unpinned );
                 }
                 else
                 {
+                    //std::cout <<"ev null & orthogonal "<<eigenvalues[0]<<" "<<mode_follow<<" "<<mode_evalue<< std::endl;
                     // Copy out the forces
                     Vectormath::set_c_a( 1, gradient, force, this->systems[0]->geometry->mask_unpinned );
                 }

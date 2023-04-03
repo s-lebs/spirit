@@ -863,6 +863,7 @@ std::unique_ptr<Data::Parameters_Method_EMA> Parameters_Method_EMA_from_Config( 
             config_file_handle.Read_Single( parameters->n_mode_follow, "ema_n_mode_follow" );
             config_file_handle.Read_Single( parameters->frequency, "ema_frequency" );
             config_file_handle.Read_Single( parameters->amplitude, "ema_amplitude" );
+            config_file_handle.Read_Single( parameters->sparse, "ema_sparse" );
         }
         catch( ... )
         {

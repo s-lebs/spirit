@@ -19,12 +19,37 @@ try
     info.minimum      = image_minimum;
     info.saddle_point = image_sp;
 
+
+    // HTST Calculation
 #ifndef SPIRIT_SKIP_HTST
     if( !sparse )
         Engine::HTST::Calculate( chain->htst_info, n_eigenmodes_keep );
     else
         Engine::Sparse_HTST::Calculate( chain->htst_info );
 #endif
+
+
+    // Update the zero mode volume if there is a non-translational mode at the saddle point/minimum
+    if(chain->htst_info.rmode_sp==true)
+    {
+        double vol=Engine::HTST::UpdateZMV(state,idx_image_minimum,idx_image_sp,idx_chain,'s');
+        chain->htst_info.volume_sp=chain->htst_info.volume_sp*vol;
+        std::cout <<"The rotational ZMV of the saddlepoint is:"<< vol<< std::endl;
+
+    }
+    if(chain->htst_info.rmode_min==true)
+    {
+        double vol= Engine::HTST::UpdateZMV(state,idx_image_minimum,idx_image_sp,idx_chain,'m');
+        chain->htst_info.volume_min=chain->htst_info.volume_min*vol;
+        std::cout <<"The rotational ZMV of the skyrmion is:"<< vol<< std::endl;
+    }
+
+    // Print the output values of the HTST calculation
+    if( !sparse )
+        Engine::HTST::End_HTST( chain->htst_info);
+    else
+    	Engine::Sparse_HTST::End_HTST( chain->htst_info);
+    
 
     return (float)info.prefactor;
 }

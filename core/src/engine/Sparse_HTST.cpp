@@ -39,7 +39,7 @@ void Sparse_Get_Lowest_Eigenvectors( const SpMatrixX & matrix, scalar max_evalue
     Log( Utility::Log_Level::All, Utility::Log_Sender::HTST, "    Using Spectra to compute lowest eigenmodes..." );
 
     int nos     = matrix.rows() / 2;
-    int n_modes = 3; // Number of lowest modes to be computed (should always be enough)
+    int n_modes = 4; // Number of lowest modes to be computed (should always be enough)
 
     int ncv      = std::min(2*nos, std::max(2*n_modes + 1, 20)); // This is the default value used by scipy.sparse
     int max_iter = 20*nos;
@@ -344,8 +344,20 @@ void Calculate( Data::HTST_Info & htst_info )
 
         if ( spectrum_solver == Partial_Spectrum_Solver::RAYLEIGH )
             Sparse_Get_Lowest_Eigenvectors_VP( sparse_hessian_sp_geodesic_2N, epsilon, evalues_sp, evecs_sp );
+
         else if ( spectrum_solver == Partial_Spectrum_Solver::LANCZOS )
             Sparse_Get_Lowest_Eigenvectors( sparse_hessian_sp_geodesic_2N, epsilon, evalues_sp, evecs_sp );
+
+        htst_info.eigenvalues_sp.conservativeResize( evalues_sp.size() );
+        htst_info.eigenvectors_sp.conservativeResize( 2* nos, evalues_sp.size() );
+
+        for( int i = 0; i < evalues_sp.size(); i++ )
+        {
+            htst_info.eigenvalues_sp[i]=evalues_sp[i];
+            htst_info.eigenvectors_sp.col(i)=evecs_sp[i];
+        }
+
+        int n_ev=evalues_sp.size();
 
         scalar lowest_evalue     = evalues_sp[0];
         VectorX & lowest_evector = evecs_sp[0];
@@ -356,12 +368,12 @@ void Calculate( Data::HTST_Info & htst_info )
         Log( Utility::Log_Level::Info, Utility::Log_Sender::HTST, "    Check if actually a saddle point..." );
         if( lowest_evalue > -epsilon )
         {
-            Log( Utility::Log_Level::Error, Utility::Log_Sender::All,
+            /*Log( Utility::Log_Level::Error, Utility::Log_Sender::All,
                  fmt::format(
                      "HTST: the transition configuration is not a saddle point, its lowest eigenvalue is above the "
                      "threshold ({} > {})!",
                      lowest_evalue, -epsilon ) );
-            return;
+            return;*/
         }
         // Check if second-lowest eigenvalue < 0 (higher-order SP)
         Log( Utility::Log_Level::Info, Utility::Log_Sender::HTST, "    Check if higher order saddle point..." );
@@ -406,7 +418,7 @@ void Calculate( Data::HTST_Info & htst_info )
         {
             Log( Utility::Log_Level::All, Utility::Log_Sender::HTST,
                  fmt::format( "ZERO MODES AT SADDLE POINT (N={})", n_zero_modes_sp ) );
-            htst_info.volume_sp = HTST::Calculate_Zero_Volume( htst_info.saddle_point );
+            htst_info.volume_sp = HTST::Calculate_Zero_Volume( htst_info.saddle_point, htst_info.eigenvalues_sp, htst_info.eigenvectors_sp,epsilon, n_ev, &htst_info.rmode_sp);
         }
     }
 
@@ -452,19 +464,32 @@ void Calculate( Data::HTST_Info & htst_info )
         else if ( spectrum_solver == Partial_Spectrum_Solver::LANCZOS )
             Sparse_Get_Lowest_Eigenvectors( sparse_hessian_geodesic_min_2N, epsilon, evalues_min, evecs_min );
 
+
+        htst_info.eigenvalues_min.conservativeResize( evalues_min.size() );
+        htst_info.eigenvectors_min.conservativeResize( 2* nos, evalues_min.size() );
+
+        for( int i = 0; i < evalues_min.size(); i++ )
+        {
+            htst_info.eigenvalues_min[i]=evalues_min[i];
+            htst_info.eigenvectors_min.col(i)=evecs_min[i];
+        }
+
+        int n_ev=evalues_min.size();
+
         // Checking for zero modes at the minimum..
         Log( Utility::Log_Level::Info, Utility::Log_Sender::HTST, "    Checking for zero modes at the minimum ..." );
         for( const auto & i : evalues_min )
         {
             if( std::abs( i ) <= epsilon )
                 ++n_zero_modes_minimum;
-            if( i < 0 )
+            else if( i < 0 )
             {
                 // The Question is if we should terminate the calculation here or allow to
                 // continue since often the negatives cancel sqrt(-x) * sqrt(-x) = sqrt(x^2)
                 Log( Utility::Log_Level::Warning, Utility::Log_Sender::HTST,
                      fmt::format( "    Minimum has a negative mode with eigenvalue = {}!", i ) );
             }
+                        
         }
         // Deal with zero modes if any (calculate volume)
         htst_info.volume_min = 1;
@@ -472,7 +497,7 @@ void Calculate( Data::HTST_Info & htst_info )
         {
             Log( Utility::Log_Level::All, Utility::Log_Sender::HTST,
                  fmt::format( "ZERO MODES AT MINIMUM (N={})", n_zero_modes_minimum ) );
-            htst_info.volume_min = HTST::Calculate_Zero_Volume( htst_info.minimum );
+            htst_info.volume_min = HTST::Calculate_Zero_Volume( htst_info.minimum, htst_info.eigenvalues_min, htst_info.eigenvectors_min,epsilon, n_ev, &htst_info.rmode_min);
         }
     }
     // End initial state minimum
@@ -485,6 +510,7 @@ void Calculate( Data::HTST_Info & htst_info )
     // Calculate the exponent for the temperature-dependence of the prefactor
     //      The exponent depends on the number of zero modes at the different states
     htst_info.temperature_exponent = 0.5 * ( n_zero_modes_minimum - n_zero_modes_sp );
+    std::cout <<n_zero_modes_minimum<<n_zero_modes_sp<< std::endl;
 
     // Calculate "me"
     htst_info.me = std::pow( 2 * C::Pi * C::k_B, htst_info.temperature_exponent );
@@ -492,19 +518,23 @@ void Calculate( Data::HTST_Info & htst_info )
     // Calculate Omega_0, i.e. the entropy contribution
     htst_info.Omega_0 = std::sqrt( std::exp( htst_info.det_min - htst_info.det_sp ) );
 
+    std::cout <<htst_info.det_min<< std::endl;
+    std::cout <<htst_info.det_sp<< std::endl;
+    std::cout <<htst_info.Omega_0<< std::endl;
+
     scalar zero_mode_factor = 1;
     for( std::size_t i = 0; i < n_zero_modes_minimum; i++ )
         zero_mode_factor /= std::abs( evalues_min[i] ); // We can take the abs here and in the determinants, because in
-                                                        // the end we know the result must be positive
+        std::cout <<zero_mode_factor<< std::endl;                                                // the end we know the result must be positive
 
     for( std::size_t i = 0; i < n_zero_modes_sp; i++ )
         zero_mode_factor *= std::abs( evalues_sp[i + 1] ); // We can take the abs here and in the determinants, because
-                                                           // in the end we know the result must be positive
+        std::cout <<zero_mode_factor<< std::endl;                                                   // in the end we know the result must be positive
 
     zero_mode_factor = std::sqrt( zero_mode_factor );
 
     htst_info.Omega_0 *= zero_mode_factor;
-
+/*
     // Calculate the prefactor
     htst_info.prefactor_dynamical = htst_info.me * htst_info.volume_sp / htst_info.volume_min * htst_info.s;
     htst_info.prefactor
@@ -522,6 +552,31 @@ void Calculate( Data::HTST_Info & htst_info )
           fmt::format( "log |det_min| = {:^20e}", htst_info.det_min ),
           fmt::format( "log |det_sp|  = {:^20e}", htst_info.det_sp ),
           fmt::format( "0-mode factor = {:^20e}", zero_mode_factor ),
+          fmt::format( "hbar[meV*s]   = {:^20e}", C::hbar * 1e-12 ),
+          fmt::format( "v = dynamical prefactor = {:^20e}", htst_info.prefactor_dynamical ),
+          fmt::format( "prefactor               = {:^20e}", htst_info.prefactor ) },
+        -1, -1 );*/
+}
+
+void End_HTST( Data::HTST_Info & htst_info)
+{
+    // Calculate the prefactor
+    htst_info.prefactor_dynamical = htst_info.me * htst_info.volume_sp / htst_info.volume_min * htst_info.s;
+    htst_info.prefactor
+        = C::g_e / ( C::hbar * 1e-12 ) * htst_info.Omega_0 * htst_info.prefactor_dynamical / ( 2 * C::Pi );
+
+    Log.SendBlock(
+        Utility::Log_Level::All, Utility::Log_Sender::HTST,
+        { "---- Prefactor calculation successful!",
+          fmt::format( "exponent      = {:^20e}", htst_info.temperature_exponent ),
+          fmt::format( "me            = {:^20e}", htst_info.me ),
+          fmt::format( "m = Omega_0   = {:^20e}", htst_info.Omega_0 ),
+          fmt::format( "s             = {:^20e}", htst_info.s ),
+          fmt::format( "volume_sp     = {:^20e}", htst_info.volume_sp ),
+          fmt::format( "volume_min    = {:^20e}", htst_info.volume_min ),
+          fmt::format( "log |det_min| = {:^20e}", htst_info.det_min ),
+          fmt::format( "log |det_sp|  = {:^20e}", htst_info.det_sp ),
+          //fmt::format( "0-mode factor = {:^20e}", zero_mode_factor ),
           fmt::format( "hbar[meV*s]   = {:^20e}", C::hbar * 1e-12 ),
           fmt::format( "v = dynamical prefactor = {:^20e}", htst_info.prefactor_dynamical ),
           fmt::format( "prefactor               = {:^20e}", htst_info.prefactor ) },

@@ -330,6 +330,25 @@ catch( ... )
     spirit_handle_exception_api( idx_image, idx_chain );
 }
 
+// Calculate the eigenmodes of the System
+void System_Update_EigenmodesGD( State * state, int idx_image, int idx_chain, int GD_it ) noexcept
+try
+{
+    // Fetch correct indices and pointers for image and chain
+    std::shared_ptr<Data::Spin_System> image;
+    std::shared_ptr<Data::Spin_System_Chain> chain;
+
+    // Fetch correct indices and pointers
+    from_indices( state, idx_image, idx_chain, image, chain );
+    image->Lock();
+    Engine::Eigenmodes::Calculate_EigenmodesGD( image, idx_image, idx_chain ,GD_it);
+    image->Unlock();
+}
+catch( ... )
+{
+    spirit_handle_exception_api( idx_image, idx_chain );
+}
+
 
 // Calculate the eigenmodes of the System
 void System_Transfer_Eigenmodes( State * state, int idx_image, int idx_chain ) noexcept
@@ -344,6 +363,26 @@ try
 
     image->Lock();
     Engine::Eigenmodes::Transfer_Eigenmodes( image, idx_image, idx_chain );
+    image->Unlock();
+}
+catch( ... )
+{
+    spirit_handle_exception_api( idx_image, idx_chain );
+}
+
+// Flip one eigenmode of the System
+void System_Flip_Eigenmode( State * state,int idx_mode, int idx_image, int idx_chain ) noexcept
+try
+{
+    // Fetch correct indices and pointers for image and chain
+    std::shared_ptr<Data::Spin_System> image;
+    std::shared_ptr<Data::Spin_System_Chain> chain;
+
+    // Fetch correct indices and pointers
+    from_indices( state, idx_image, idx_chain, image, chain );
+
+    image->Lock();
+    Engine::Eigenmodes::Flip_Eigenmode( image, idx_mode, idx_image, idx_chain );
     image->Unlock();
 }
 catch( ... )

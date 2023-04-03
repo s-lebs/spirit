@@ -50,6 +50,12 @@ bool computeLowEV(const std::shared_ptr<Data::Parameters_Method> parameters, con
 
 //Transfer the 2N eigenvectors into the 3N eigenvectors
 void Transfer_Eigenmodes( std::shared_ptr<Data::Spin_System> system, int idx_img, int idx_chain );
+
+//Flip one eigenmode
+void Flip_Eigenmode(std::shared_ptr<Data::Spin_System> system,int idx_mode, int idx_img, int idx_chain);
+
+void Calculate_EigenmodesGD( std::shared_ptr<Data::Spin_System> system, int idx_img, int idx_chain, int GD_it);
+
 } // end namespace Eigenmodes
 } // end namespace Engine
 

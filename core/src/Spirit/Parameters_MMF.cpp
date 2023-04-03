@@ -274,6 +274,30 @@ catch( ... )
     spirit_handle_exception_api( idx_image, idx_chain );
 }
 
+
+void Parameters_MMF_Set_Rot_Sym( State * state, bool sym, int idx_image, int idx_chain ) noexcept
+try
+{
+    std::shared_ptr<Data::Spin_System> image;
+    std::shared_ptr<Data::Spin_System_Chain> chain;
+
+    // Fetch correct indices and pointers
+    from_indices( state, idx_image, idx_chain, image, chain );
+
+    image->Lock();
+    auto p     = image->mmf_parameters;
+    p->rot_sym = sym;
+    image->Unlock();
+
+    Log( Utility::Log_Level::Parameter, Utility::Log_Sender::API,
+             fmt::format( "Set MMF number rotational symmetry = {}", sym ), idx_image, idx_chain );
+    
+}
+catch( ... )
+{
+    spirit_handle_exception_api( idx_image, idx_chain );
+}
+
 /*------------------------------------------------------------------------------------------------------ */
 /*---------------------------------- Get MMF ----------------------------------------------------------- */
 /*------------------------------------------------------------------------------------------------------ */

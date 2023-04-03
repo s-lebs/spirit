@@ -35,6 +35,8 @@ struct HTST_Info
     VectorX perpendicular_velocity = VectorX( 0 );
     scalar det_min                 = 0;
     scalar det_sp                  = 0;
+    bool rmode_min                 = false;
+    bool rmode_sp                  = false;
 
     // Prefactor constituents
     scalar temperature_exponent = 0;
