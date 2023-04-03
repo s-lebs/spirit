@@ -39,7 +39,7 @@ _EMA_Set_N_Mode_Follow.restype  = None
 def set_n_mode_follow(p_state, n_mode, idx_image=-1, idx_chain=-1):
     """Set the index of the mode to use."""
     _EMA_Set_N_Mode_Follow(ctypes.c_void_p(p_state), ctypes.c_int(n_mode),
-                          ctypes.c_int(idx_image), ctypes.c_int(idx_chain))
+                          ctypes.c_int(idx_image), ctypes.c_int(idx_chain)) 
 
 _EMA_Set_Sparse          = _spirit.Parameters_EMA_Set_Sparse
 _EMA_Set_Sparse.argtypes = [ctypes.c_void_p, ctypes.c_bool,
@@ -49,6 +49,16 @@ def set_sparse(p_state, sparse, idx_image=-1, idx_chain=-1):
     """Set wether to use sparse matrices."""
     _EMA_Set_Sparse(ctypes.c_void_p(p_state), ctypes.c_bool(sparse),
                     ctypes.c_int(idx_image), ctypes.c_int(idx_chain))
+
+_EMA_Set_Amplitude          = _spirit.Parameters_EMA_Set_Amplitude
+_EMA_Set_Amplitude.argtypes = [ctypes.c_void_p, ctypes.c_float,
+                                    ctypes.c_int, ctypes.c_int]
+_EMA_Set_Amplitude.restype  = None
+def set_amplitude(p_state, amplitude, idx_image=-1, idx_chain=-1):
+    """Set the amplitude used to displace the eigemode."""
+    _EMA_Set_Amplitude(ctypes.c_void_p(p_state), ctypes.c_float(amplitude),
+                          ctypes.c_int(idx_image), ctypes.c_int(idx_chain))
+
 
 # ---------------------------------- Get ----------------------------------
 
@@ -75,3 +85,4 @@ def get_sparse(p_state, sparse, idx_image=-1, idx_chain=-1):
     """Set wether to use sparse matrices."""
     return bool(_EMA_Get_Sparse(ctypes.c_void_p(p_state),
                                 ctypes.c_int(idx_image), ctypes.c_int(idx_chain)))
+
